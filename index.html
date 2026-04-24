@@ -2194,6 +2194,89 @@ header {
 .group-detail-title { font-family: 'Pacifico', cursive; font-size: 1.2rem; flex: 1; }
 .group-detail-body { max-width: 1100px; margin: 0 auto; padding: 20px; }
 
+/* ── Barre de statut globale (sous nav-tabs) ── */
+.status-bar {
+  display: none;
+  background: white;
+  border-bottom: 1.5px solid var(--border);
+  padding: 6px 20px;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  min-height: 38px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.status-bar.visible { display: flex; }
+
+/* Statut Drive */
+.sb-drive {
+  display: flex; align-items: center; gap: 7px;
+  padding: 3px 10px; border-radius: 12px;
+  font-size: 0.75rem; font-weight: 700;
+  transition: background 0.3s;
+  cursor: pointer;
+}
+.sb-drive.connected    { background: #e8f5e9; color: #1b5e20; }
+.sb-drive.disconnected { background: #f5f5f5; color: #888; }
+.sb-drive.syncing      { background: #fff8e0; color: #e65100; }
+.sb-drive.error        { background: #fce4ec; color: #880e4f; }
+.sb-drive.new-file     { background: #fff3e0; color: #bf360c; animation: pulseOrange 1.5s infinite; }
+
+@keyframes pulseOrange {
+  0%,100% { background: #fff3e0; }
+  50%      { background: #ffe0b2; }
+}
+
+/* Spinner de poll */
+.poll-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(0,0,0,0.1);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+.poll-spinner.hidden { display: none; }
+
+/* Utilisateurs en ligne dans la barre de statut */
+.sb-online { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sb-online-label { color: var(--text-muted); font-size: 0.72rem; }
+.sb-user-chip {
+  display: flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 10px;
+  font-size: 0.72rem; font-weight: 700;
+  border: 1.5px solid var(--border);
+}
+.sb-user-chip.online  { background: #e8f5e9; border-color: #a5d6a7; color: #1b5e20; }
+.sb-user-chip.offline { background: #f5f5f5; border-color: #e0e0e0; color: #aaa; }
+.sb-online-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+.sb-online-dot.on  { background: #4caf50; box-shadow: 0 0 4px #4caf50; animation: pulse-green 2s infinite; }
+.sb-online-dot.off { background: #ccc; }
+
+/* Bannière restauration — redesign */
+#drive-restore-notif {
+  position: fixed;
+  top: 72px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 980;
+  background: linear-gradient(135deg, #bf360c, #e64a19);
+  color: white;
+  padding: 14px 22px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  display: none;
+  align-items: center;
+  gap: 14px;
+  max-width: 560px;
+  width: 92vw;
+  font-size: 0.88rem;
+  animation: slideDown 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  border: 2px solid rgba(255,255,255,0.25);
+}
+
 /* ── Activité récente ── */
 .activity-item {
   display: flex; align-items: center; gap: 12px;
@@ -2343,6 +2426,27 @@ header {
     <button class="nav-tab" onclick="showTab('tab-budget')" id="nt-budget">💰 Budget</button>
     <button class="nav-tab" onclick="showTab('tab-inbox')" id="nt-inbox">💬 Messages</button>
     <button class="nav-tab admin-only" onclick="showTab('tab-admin')" id="nt-admin">⚙️ Administration</button>
+  </div><!-- /nav-tabs -->
+
+  <!-- ── BARRE DE STATUT GLOBALE ── -->
+  <div class="status-bar" id="global-status-bar">
+
+    <!-- Drive status -->
+    <div class="sb-drive disconnected" id="sb-drive" onclick="driveToggleConnect()" title="Cliquer pour connecter/déconnecter Drive">
+      <div class="poll-spinner hidden" id="poll-spinner"></div>
+      <span id="sb-drive-icon">☁️</span>
+      <span id="sb-drive-text">Drive non connecté</span>
+    </div>
+
+    <!-- Séparateur -->
+    <div style="width:1px;height:20px;background:var(--border);flex-shrink:0;"></div>
+
+    <!-- Utilisateurs en ligne -->
+    <div class="sb-online">
+      <span class="sb-online-label">En ligne :</span>
+      <div id="sb-online-users" style="display:flex;gap:5px;flex-wrap:wrap;"></div>
+    </div>
+
   </div>
 
   <div class="main-content">
@@ -3014,14 +3118,20 @@ header {
 </button>
 
 <!-- DRIVE RESTORE NOTIFICATION -->
-<div id="drive-restore-notif" style="display:none; position:fixed; top:70px; left:50%; transform:translateX(-50%); z-index:950; background:linear-gradient(135deg,var(--ocean-deep),var(--ocean)); color:white; padding:12px 20px; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.3); display:none; align-items:center; gap:14px; max-width:520px; width:90vw; animation:slideDown 0.4s cubic-bezier(0.34,1.56,0.64,1);">
-  <span style="font-size:1.4rem;flex-shrink:0;">📥</span>
+<div id="drive-restore-notif" style="display:none;">
+  <span style="font-size:1.6rem;flex-shrink:0;">🔄</span>
   <div style="flex:1;">
     <div style="font-weight:800;font-size:0.92rem;">Nouveau fichier Drive disponible</div>
-    <div style="font-size:0.75rem;opacity:0.85;" id="drive-notif-detail">Une sauvegarde plus récente existe sur Drive.</div>
+    <div style="font-size:0.75rem;opacity:0.85;margin-top:2px;" id="drive-notif-detail">Une sauvegarde plus récente existe.</div>
   </div>
-  <button onclick="driveRestoreFromNotif()" style="background:var(--sand);border:none;color:var(--ocean-deep);padding:7px 14px;border-radius:10px;font-weight:800;font-size:0.82rem;cursor:pointer;font-family:'Nunito',sans-serif;white-space:nowrap;">📥 Restaurer</button>
-  <button onclick="document.getElementById('drive-restore-notif').style.display='none'" style="background:rgba(255,255,255,0.15);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-family:'Nunito',sans-serif;font-size:1rem;flex-shrink:0;">✕</button>
+  <button onclick="driveRestoreFromNotif()"
+    style="background:white;border:none;color:#bf360c;padding:8px 16px;border-radius:10px;font-weight:800;font-size:0.82rem;cursor:pointer;font-family:'Nunito',sans-serif;white-space:nowrap;flex-shrink:0;">
+    📥 Restaurer
+  </button>
+  <button onclick="driveIgnoreNewFile()"
+    style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;font-family:'Nunito',sans-serif;font-size:1rem;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;">
+    ✕
+  </button>
 </div>
 
 <style>
@@ -3213,6 +3323,7 @@ function doLogout() {
   stopPresence();
   stopDrivePoll();
   closeChat();
+  hideStatusBar();
   document.getElementById('chat-fab').style.display = 'none';
   const hoc = document.getElementById('header-online-count');
   if (hoc) hoc.remove();
@@ -4066,6 +4177,7 @@ function startPresence() {
     renderChatTopicsSidebar();
     if (chatOpen) renderChatMessages();
     updateFabBadge();
+    updateSbOnline();
     // Rafraîchir présence dans l'onglet Messages si actif
     if (document.getElementById('tab-inbox')?.classList.contains('active')) {
       renderTabOnlinebar();
@@ -5069,10 +5181,11 @@ function updateDriveUI() {
     }
   }
 
-  /* ── Mettre à jour le bouton en haut du panneau admin ── */
-  const driveBtnAdmin = document.getElementById('drive-config-btn');
-  if (driveBtnAdmin && !driveAuthed) {
-    driveBtnAdmin.onclick = driveToggleConnect;
+  /* ── Mettre à jour la barre de statut ── */
+  if (driveAuthed && driveUserInfo) {
+    updateSbDrive('connected');
+  } else {
+    updateSbDrive('disconnected');
   }
 }
 
@@ -6260,6 +6373,10 @@ function stopDrivePoll() {
 async function drivePollTick() {
   if (!driveAuthed || driveBackingUp) return;
   try {
+    // Afficher le spinner le temps du check metadata (léger)
+    showPollSpinner(true);
+    updateSbDrive('syncing', 'Vérification…');
+
     const backupId = await getBackupFolderId();
     const q = `name='${DRIVE_FILE_NAME}' and '${backupId}' in parents and trashed=false`;
     // Appel léger : seulement id + modifiedTime
@@ -6313,23 +6430,24 @@ async function drivePollTick() {
         if (activeTab === 'tab-budget')    renderBudget();
         updateFabBadge();
         showSyncIndicator('saved');
+        updateSbDrive('connected');
         // Notification de sync
         showDriveSyncNotif(modTime);
       }
     }
   } catch(e) { /* silencieux */ }
+  finally {
+    showPollSpinner(false);
+    // Si pas "new-file", remettre "connected"
+    const el = document.getElementById('sb-drive');
+    if (driveAuthed && el && !el.classList.contains('new-file')) {
+      updateSbDrive('connected');
+    }
+  }
 }
 
 function showDriveNewFileNotif(file, modTime) {
-  _pendingRestoreFileId = file.id;
-  const dateStr = new Date(modTime).toLocaleString('fr-FR', {
-    day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
-  });
-  const kb = file.size ? (parseInt(file.size)/1024).toFixed(1) + ' Ko' : '';
-  const notif = document.getElementById('drive-restore-notif');
-  const detail = document.getElementById('drive-notif-detail');
-  if (detail) detail.textContent = `Sauvegarde du ${dateStr}${kb?' · '+kb:''}`;
-  if (notif) { notif.style.display = 'flex'; }
+  showRestoreNotif({ id: file.id, modifiedTime: modTime, size: file.size });
 }
 
 function showDriveSyncNotif(modTime) {
@@ -6338,8 +6456,101 @@ function showDriveSyncNotif(modTime) {
 }
 
 // ═══════════════════════════════════════════════════════
-//  SPLASH — RESTAURATION AUTO AU LOGIN
+//  BARRE DE STATUT GLOBALE
 // ═══════════════════════════════════════════════════════
+
+function showStatusBar() {
+  const bar = document.getElementById('global-status-bar');
+  if (bar) bar.classList.add('visible');
+}
+
+function hideStatusBar() {
+  const bar = document.getElementById('global-status-bar');
+  if (bar) bar.classList.remove('visible');
+}
+
+/** Met à jour le widget Drive dans la barre de statut */
+function updateSbDrive(state, detail) {
+  const el   = document.getElementById('sb-drive');
+  const icon = document.getElementById('sb-drive-icon');
+  const txt  = document.getElementById('sb-drive-text');
+  if (!el) return;
+
+  el.className = 'sb-drive ' + state;
+
+  const configs = {
+    connected:    { icon: '☁️ ✅', text: driveUserInfo ? driveUserInfo.email.split('@')[0] : 'Drive connecté' },
+    disconnected: { icon: '☁️',    text: 'Drive non connecté' },
+    syncing:      { icon: '☁️',    text: detail || 'Synchronisation…' },
+    error:        { icon: '☁️ ❌', text: 'Erreur Drive' },
+    'new-file':   { icon: '🔄',    text: detail || 'Nouveau fichier disponible' }
+  };
+  const cfg = configs[state] || configs.disconnected;
+  if (icon) icon.textContent = cfg.icon;
+  if (txt)  txt.textContent  = cfg.text;
+}
+
+/** Affiche / cache le spinner de poll */
+function showPollSpinner(visible) {
+  const sp = document.getElementById('poll-spinner');
+  if (sp) sp.classList.toggle('hidden', !visible);
+}
+
+/** Met à jour les chips utilisateurs en ligne dans la barre de statut */
+function updateSbOnline() {
+  const container = document.getElementById('sb-online-users');
+  if (!container) return;
+  const online = getOnlineUsers();
+  container.innerHTML = data.profiles.map(p => {
+    const isOn = online.some(o => o.id === p.id);
+    return `
+      <div class="sb-user-chip ${isOn ? 'online' : 'offline'}" title="${p.name}${isOn ? ' — En ligne' : ' — Hors ligne'}">
+        <div class="sb-online-dot ${isOn ? 'on' : 'off'}"></div>
+        <div style="width:18px;height:18px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:white;">${p.name[0]}</div>
+        <span>${p.name.split(' ')[0]}</span>
+      </div>`;
+  }).join('');
+}
+
+/** Affiche la bannière de restauration disponible */
+function showRestoreNotif(fileInfo) {
+  _pendingRestoreFileId = fileInfo.id;
+  const dateStr = new Date(fileInfo.modifiedTime).toLocaleString('fr-FR', {
+    day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
+  });
+  const kb = fileInfo.size ? (parseInt(fileInfo.size)/1024).toFixed(1) + ' Ko' : '';
+  const detail = document.getElementById('drive-notif-detail');
+  const notif  = document.getElementById('drive-restore-notif');
+  if (detail) detail.textContent = `Sauvegarde du ${dateStr}${kb ? ' · ' + kb : ''}`;
+  if (notif)  notif.style.display = 'flex';
+  // Mettre la barre de statut Drive en mode "new-file"
+  updateSbDrive('new-file', `Disponible · ${dateStr}`);
+}
+
+function driveIgnoreNewFile() {
+  const notif = document.getElementById('drive-restore-notif');
+  if (notif) notif.style.display = 'none';
+  // Marquer la modifiedTime actuelle comme "connue" pour ne plus alerter
+  if (_driveLastModified) {
+    localStorage.setItem('projetPlage_lastRestoreTs', new Date(_driveLastModified).getTime().toString());
+  }
+  _pendingRestoreFileId = null;
+  updateSbDrive(driveAuthed ? 'connected' : 'disconnected');
+}
+
+/** Rafraîchit toute la barre de statut */
+function refreshStatusBar() {
+  updateSbOnline();
+  if (!driveAuthed) {
+    updateSbDrive('disconnected');
+  } else {
+    // Ne pas écraser 'new-file' ou 'syncing' en cours
+    const el = document.getElementById('sb-drive');
+    if (el && !el.classList.contains('new-file') && !el.classList.contains('syncing')) {
+      updateSbDrive('connected');
+    }
+  }
+}
 let _splashSkipped = false;
 
 function showSplash(msg) {
@@ -6421,6 +6632,7 @@ async function loginRestoreFlow() {
 
 function showAppAfterSplash() {
   hideSplash();
+  showStatusBar();
   refreshAll();
   showTab('tab-dashboard');
   if (currentUser?.role === 'admin') renderThresholdSelector();
@@ -6428,6 +6640,8 @@ function showAppAfterSplash() {
   checkInboxTabVisibility();
   loadDriveLastBackup();
   loadAutoBackupSettings();
+  updateSbOnline();
+  updateSbDrive(driveAuthed ? 'connected' : 'disconnected');
 }
 
 // ═══════════════════════════════════════════════════════
