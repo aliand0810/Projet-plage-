@@ -2008,18 +2008,110 @@ header {
   .chat-fab { bottom: 20px; right: 20px; }
 }
 
+/* Chat panel mobile : slide depuis le bas */
+@media (max-width: 600px) {
+  .chat-panel {
+    width: 100vw;
+    height: 92dvh;          /* dynamic viewport height = ignore barre navigateur */
+    top: auto;
+    bottom: -92dvh;
+    right: 0;
+    border-radius: 20px 20px 0 0;
+    transition: bottom 0.35s cubic-bezier(0.77,0,0.18,1);
+  }
+  .chat-panel.open { bottom: 0; right: 0; }
+  .chat-overlay.open { display: block; z-index: 849; }
+  /* Barre de drag en haut du panel */
+  .chat-panel-header::before {
+    content: '';
+    position: absolute;
+    top: 8px; left: 50%;
+    transform: translateX(-50%);
+    width: 40px; height: 4px;
+    background: rgba(255,255,255,0.4);
+    border-radius: 2px;
+  }
+  .chat-panel-header { position: relative; padding-top: 22px; }
+  /* Sidebar sujets plus étroite sur mobile */
+  .chat-topics { width: 88px; }
+  .chat-topic-name { font-size: 0.7rem; }
+  .chat-topics-section { font-size: 0.58rem; }
+}
+
 /* CODE DISPLAY */
 .code-display {
-  background: var(--ocean-deep);
-  color: var(--sand);
-  padding: 12px 20px;
-  border-radius: 10px;
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: 6px;
-  text-align: center;
-  font-family: monospace;
-  margin: 10px 0;
+  background: var(--ocean-deep); color: var(--sand);
+  padding: 12px 20px; border-radius: 10px; font-size: 1.4rem;
+  font-weight: 800; letter-spacing: 6px; text-align: center;
+  font-family: monospace; margin: 10px 0;
+}
+
+/* ── Splash restauration ── */
+#restore-splash {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(135deg, var(--ocean-deep), var(--ocean));
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 20px; color: white;
+}
+.splash-logo { font-family: 'Pacifico', cursive; font-size: 2.5rem; }
+.splash-msg  { font-size: 1rem; font-weight: 700; opacity: 0.85; }
+.splash-spinner {
+  width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.3);
+  border-top-color: white; border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+.splash-skip {
+  margin-top: 10px; background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3); color: white;
+  padding: 8px 20px; border-radius: 10px; cursor: pointer;
+  font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.85rem;
+}
+
+/* ── Stats cliquables ── */
+.stat-card { cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.12); }
+.stat-card:active { transform: scale(0.97); }
+
+/* ── Groupe cliquable ── */
+.group-card { cursor: pointer; }
+.group-card:hover { transform: translateY(-5px); box-shadow: 0 12px 32px rgba(0,0,0,0.13); }
+
+/* ── Panel détail groupe ── */
+.group-detail-panel {
+  position: fixed; top: 0; left: -100%; width: 100%; height: 100%;
+  background: var(--bg); z-index: 950; overflow-y: auto;
+  transition: left 0.35s cubic-bezier(0.77,0,0.18,1);
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+}
+.group-detail-panel.open { left: 0; }
+.group-detail-header {
+  background: linear-gradient(135deg, var(--ocean-deep), var(--ocean));
+  color: white; padding: 18px 22px;
+  padding-top: calc(18px + env(safe-area-inset-top));
+  display: flex; align-items: center; gap: 14px;
+  position: sticky; top: 0; z-index: 10;
+}
+.group-detail-back {
+  background: rgba(255,255,255,0.2); border: none; color: white;
+  width: 38px; height: 38px; border-radius: 50%; font-size: 1.1rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-family: 'Nunito', sans-serif; flex-shrink: 0; transition: background 0.2s;
+}
+.group-detail-back:hover { background: rgba(255,255,255,0.35); }
+.group-detail-title { font-family: 'Pacifico', cursive; font-size: 1.2rem; flex: 1; }
+.group-detail-body { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+/* ── Activité récente ── */
+.activity-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; background: white; border-radius: 10px;
+  margin-bottom: 8px; font-size: 0.85rem;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+  transition: background 0.15s;
+}
+.activity-item:hover { background: var(--foam); cursor: pointer; }
+.activity-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
 }
 </style>
 </head>
@@ -2165,6 +2257,11 @@ header {
     <!-- ──────── TABLEAU DE BORD ──────── -->
     <div class="tab-section active" id="tab-dashboard">
       <div class="stats-row" id="stats-row"></div>
+
+      <div class="panel">
+        <div class="panel-title">⚡ Activité récente</div>
+        <div id="recent-activity"></div>
+      </div>
 
       <div class="panel">
         <div class="panel-title">📢 Groupes en attente de validation</div>
@@ -2799,6 +2896,24 @@ header {
 }
 </style>
 
+<!-- SPLASH RESTAURATION -->
+<div id="restore-splash" style="display:none;">
+  <div class="splash-logo">🌴 Projet Plage</div>
+  <div class="splash-spinner"></div>
+  <div class="splash-msg" id="splash-msg">Vérification de la sauvegarde Drive…</div>
+  <button class="splash-skip" onclick="splashSkip()">Continuer sans attendre →</button>
+</div>
+
+<!-- PANEL DÉTAIL GROUPE -->
+<div class="group-detail-panel" id="group-detail-panel">
+  <div class="group-detail-header">
+    <button class="group-detail-back" onclick="closeGroupDetail()">←</button>
+    <div class="group-detail-title" id="gdp-title">Groupe</div>
+    <span class="status-badge" id="gdp-status" style="margin-left:auto;"></span>
+  </div>
+  <div class="group-detail-body" id="group-detail-body"></div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -2955,18 +3070,8 @@ function doLogin() {
   document.getElementById('header-right')?.appendChild(hoc) || document.querySelector('.header-right')?.appendChild(hoc);
 
   refreshAll();
-  showTab('tab-dashboard');
-  if (profile.role === 'admin') renderThresholdSelector();
-
-  // Démarrer présence
-  startPresence();
-
-  // Visibilité onglet inbox + init Drive
-  checkInboxTabVisibility();
-  const savedCid = getDriveClientId();
-  if (savedCid) { const el = document.getElementById('drive-client-id'); if (el) el.value = savedCid; }
-  loadDriveLastBackup();
-  loadAutoBackupSettings();
+  // Restauration Drive avant d'afficher l'app
+  loginRestoreFlow();
 }
 
 function doLogout() {
@@ -3146,10 +3251,18 @@ function renderDashboard() {
   const totalBudget = data.projects.reduce((s, p) => s + (parseFloat(p.price) || 0), 0);
 
   document.getElementById('stats-row').innerHTML = `
-    <div class="stat-card ocean"><div class="stat-value">${totalProjects}</div><div class="stat-label">Projets totaux</div></div>
-    <div class="stat-card palm"><div class="stat-value">${projValidated}</div><div class="stat-label">Projets validés ✅</div></div>
-    <div class="stat-card sand"><div class="stat-value">${projPending}</div><div class="stat-label">En cours de vote 🗳</div></div>
-    <div class="stat-card coral"><div class="stat-value">${totalBudget > 0 ? totalBudget.toLocaleString('fr-FR') + ' €' : '—'}</div><div class="stat-label">Budget total</div></div>
+    <div class="stat-card ocean" onclick="showTab('tab-projects');setBottomNav('bn-projects')" title="Voir tous les projets">
+      <div class="stat-value">${totalProjects}</div><div class="stat-label">Projets totaux</div>
+    </div>
+    <div class="stat-card palm" onclick="showTab('tab-projects');setBottomNav('bn-projects');setTimeout(()=>{document.getElementById('filter-rating').value='0';renderProjects();},100)" title="Projets validés">
+      <div class="stat-value">${projValidated}</div><div class="stat-label">Projets validés ✅</div>
+    </div>
+    <div class="stat-card sand" onclick="showTab('tab-projects');setBottomNav('bn-projects')" title="En cours de vote">
+      <div class="stat-value">${projPending}</div><div class="stat-label">En cours de vote 🗳</div>
+    </div>
+    <div class="stat-card coral" onclick="showTab('tab-budget');setBottomNav('bn-budget')" title="Voir le budget">
+      <div class="stat-value">${totalBudget > 0 ? totalBudget.toLocaleString('fr-FR') + ' €' : '—'}</div><div class="stat-label">Budget total</div>
+    </div>
   `;
 
   // Groupes en attente
@@ -3220,26 +3333,55 @@ function renderDashboard() {
     }).join('');
   }
 
-  // Choix final
+  // ── Activité récente ──
+  const recentPanel = document.getElementById('recent-activity');
+  if (recentPanel) {
+    const now = Date.now();
+    const events = [];
+    data.projects.forEach(p => {
+      events.push({ ts: p.createdAt || 0, icon: '🏖', color: 'var(--ocean)', text: `Projet ajouté : <strong>${p.title}</strong>`, action: () => showTab('tab-projects') });
+      (p.accessories||[]).forEach(a => {
+        events.push({ ts: a.createdAt || 0, icon: '🎒', color: 'var(--palm)', text: `Accessoire : <strong>${a.name}</strong> → ${p.title}`, action: () => showTab('tab-projects') });
+      });
+    });
+    data.groups.forEach(g => {
+      if (g.validatedAt) events.push({ ts: g.validatedAt, icon: '✅', color: 'var(--palm)', text: `Groupe validé : <strong>${g.name}</strong>`, action: () => openGroupDetail(g.id) });
+    });
+    const msgs = loadMessages().filter(m => m.authorId === currentUser?.id);
+    msgs.slice(-3).forEach(m => {
+      events.push({ ts: m.timestamp, icon: '💬', color: 'var(--sky)', text: `Message envoyé dans <strong>${getChatTopics().find(t=>t.id===m.topicId)?.name||m.topicId}</strong>`, action: () => openChatOnTopic(m.topicId) });
+    });
+    const sorted = events.filter(e=>e.ts).sort((a,b)=>b.ts-a.ts).slice(0,8);
+    recentPanel.innerHTML = sorted.length === 0
+      ? '<div style="color:var(--text-muted);font-size:0.85rem;text-align:center;padding:20px;">Aucune activité récente</div>'
+      : sorted.map(e => `
+          <div class="activity-item" onclick="(${e.action.toString()})()">
+            <div class="activity-dot" style="background:${e.color}"></div>
+            <div style="flex:1;">${e.text}</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);white-space:nowrap;">${timeAgo(new Date(e.ts))}</div>
+          </div>`).join('');
+  }
+
+  // ── Choix final ──
   const fp = document.getElementById('final-project-info');
-  if (data.finalProjectId) {
-    const p = data.projects.find(pr => pr.id === data.finalProjectId);
-    if (p) {
-      const g = data.groups.find(gr => gr.id === p.groupId);
-      fp.innerHTML = `
-        <div style="display:flex;align-items:center;gap:20px;padding:15px;background:linear-gradient(135deg,#fffdf5,#fff8e1);border-radius:12px;border:2px solid var(--sand);flex-wrap:wrap;">
-          <img src="${p.image || 'https://placehold.co/120x80?text=No+Photo'}" style="width:120px;height:80px;object-fit:cover;border-radius:10px;">
-          <div>
-            <div style="font-size:1.2rem;font-weight:800;color:var(--ocean-deep);">${p.title}</div>
-            <div style="color:var(--coral);font-weight:700;font-size:1.1rem;">${p.price ? p.price + ' €' : 'Prix N/D'}</div>
-            <div style="font-size:0.85rem;color:var(--text-muted);">Groupe : ${g ? g.name : '—'}</div>
-            <div style="color:var(--sand);font-weight:700;">${'⭐'.repeat(parseInt(p.rating)||0)} ${p.rating ? p.rating+'/5' : ''}</div>
-          </div>
-        </div>
-      `;
+  if (fp) {
+    if (data.finalProjectId) {
+      const p = data.projects.find(pr => pr.id === data.finalProjectId);
+      if (p) {
+        const g = data.groups.find(gr => gr.id === p.groupId);
+        fp.innerHTML = `
+          <div style="display:flex;align-items:center;gap:20px;padding:15px;background:linear-gradient(135deg,#fffdf5,#fff8e1);border-radius:12px;border:2px solid var(--sand);flex-wrap:wrap;cursor:pointer;" onclick="showTab('tab-projects');setBottomNav('bn-projects')">
+            <img src="${p.image||'https://placehold.co/120x80?text=Photo'}" style="width:100px;height:70px;object-fit:cover;border-radius:8px;">
+            <div>
+              <div style="font-size:1.1rem;font-weight:800;color:var(--ocean-deep);">${p.title}</div>
+              <div style="color:var(--coral);font-weight:700;">${p.price ? p.price+' €' : 'N/D'}</div>
+              <div style="font-size:0.82rem;color:var(--text-muted);">Groupe : ${g?g.name:'—'}</div>
+            </div>
+          </div>`;
+      }
+    } else {
+      fp.innerHTML = '<div class="empty-state"><div class="icon">🎯</div><p>Aucun choix final défini</p></div>';
     }
-  } else {
-    fp.innerHTML = '<div class="empty-state"><div class="icon">🎯</div><p>Aucun choix final défini</p></div>';
   }
 }
 
@@ -3253,11 +3395,12 @@ function addGroup() {
   const group = {
     id: 'g' + Date.now(),
     name,
-    image:  document.getElementById('grp-image').value.trim(),
-    budget: document.getElementById('grp-budget').value,
-    desc:   document.getElementById('grp-desc').value,
-    status: 'pending',
-    createdBy: currentUser.id
+    image:     document.getElementById('grp-image').value.trim(),
+    budget:    document.getElementById('grp-budget').value,
+    desc:      document.getElementById('grp-desc').value,
+    status:    'pending',
+    createdBy: currentUser.id,
+    createdAt: Date.now()
   };
 
   data.groups.push(group);
@@ -3309,7 +3452,7 @@ function renderGroups() {
     const isAdmin = currentUser && currentUser.role === 'admin';
 
     return `
-      <div class="group-card">
+      <div class="group-card" onclick="openGroupDetail('${g.id}')">
         ${g.image
           ? `<img class="group-cover" src="${g.image}" alt="${g.name}" onerror="this.style.display='none'">`
           : `<div class="group-cover-placeholder">📁</div>`}
@@ -3332,13 +3475,13 @@ function renderGroups() {
               <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">${Math.round((budgetUsed/parseFloat(g.budget))*100)}% du budget utilisé</div>
             </div>
           ` : ''}
-          <div class="group-actions">
+          <div class="group-actions" onclick="event.stopPropagation()">
             ${isAdmin && g.status === 'pending' ? `
               <button class="btn btn-success btn-sm" onclick="setGroupStatus('${g.id}','validated')">✅ Valider</button>
               <button class="btn btn-danger btn-sm" onclick="setGroupStatus('${g.id}','rejected')">❌ Rejeter</button>
             ` : ''}
-            <button class="btn btn-sm" style="background:#e8f4fd;color:var(--ocean);" onclick="openChatOnTopic('grp_${g.id}')">💬 Discuter</button>
-            <button class="btn btn-sm" style="background:var(--foam);color:var(--ocean);" onclick="openEditGroup('${g.id}')">✏️ Modifier</button>
+            <button class="btn btn-sm" style="background:#e8f4fd;color:var(--ocean);" onclick="openChatOnTopic('grp_${g.id}')">💬</button>
+            <button class="btn btn-sm" style="background:var(--foam);color:var(--ocean);" onclick="openEditGroup('${g.id}')">✏️</button>
             ${isAdmin ? `<button class="btn btn-sm" style="background:#eee;color:#333;" onclick="deleteGroup('${g.id}')">🗑</button>` : ''}
           </div>
         </div>
@@ -3442,9 +3585,10 @@ function saveProject() {
     extra: document.getElementById('proj-extra').value,
     beach: document.getElementById('proj-beach').value,
     equipment: [...selectedEquipments],
-    votes: editId ? (data.projects.find(p=>p.id===editId)?.votes || []) : [],
+    votes:       editId ? (data.projects.find(p=>p.id===editId)?.votes || []) : [],
     accessories: editId ? (data.projects.find(p=>p.id===editId)?.accessories || []) : [],
-    createdBy: currentUser.id,
+    createdBy:   currentUser.id,
+    createdAt:   editId ? (data.projects.find(p=>p.id===editId)?.createdAt || Date.now()) : Date.now(),
     isFinal: false
   };
 
@@ -5733,7 +5877,7 @@ function toggleHeaderDropdown() {
   const hddDrive = document.getElementById('hdd-drive-btn');
   const hddSt    = document.getElementById('hdd-drive-status');
   if (hddSt)    hddSt.textContent    = driveAuthed ? `☁️ ${driveUserInfo?.email || 'Connecté'}` : '❌ Non connecté';
-  if (hddDrive) hddDrive.textContent = (driveAuthed ? '🔌 Déconnecter Drive' : '☁️ Connecter Drive');
+  if (hddDrive) hddDrive.textContent = driveAuthed ? '🔌 Déconnecter Drive' : '☁️ Connecter Drive';
 }
 function closeHeaderDropdown() {
   document.getElementById('header-dropdown').classList.remove('open');
@@ -5747,7 +5891,7 @@ function setBottomNav(activeId) {
   if (el) el.classList.add('active');
 }
 
-// Syncer bottom nav avec showTab (patch après déclaration)
+// Syncer bottom nav avec showTab
 const _tabToBn = {
   'tab-dashboard':'bn-dashboard','tab-groups':'bn-groups',
   'tab-projects':'bn-projects','tab-budget':'bn-budget',
@@ -5759,7 +5903,221 @@ showTab = function(tabId) {
   if (_tabToBn[tabId]) setBottomNav(_tabToBn[tabId]);
 };
 
+// ═══════════════════════════════════════════════════════
+//  SPLASH — RESTAURATION AUTO AU LOGIN
+// ═══════════════════════════════════════════════════════
+let _splashSkipped = false;
 
+function showSplash(msg) {
+  const el = document.getElementById('restore-splash');
+  if (!el) return;
+  document.getElementById('splash-msg').textContent = msg;
+  el.style.display = 'flex';
+}
+
+function hideSplash() {
+  const el = document.getElementById('restore-splash');
+  if (el) el.style.display = 'none';
+}
+
+function splashSkip() {
+  _splashSkipped = true;
+  hideSplash();
+}
+
+/** Appelé juste après connexion réussie.
+ *  Si Drive connecté → vérifie sauvegarde → restore si plus récente → affiche app.
+ *  Sinon → affiche app directement. */
+async function loginRestoreFlow() {
+  if (!driveAuthed) {
+    // Pas de Drive : affiche immédiatement
+    showAppAfterSplash();
+    return;
+  }
+
+  showSplash('Vérification de la sauvegarde Drive…');
+  _splashSkipped = false;
+
+  try {
+    const rootId  = await driveGetOrCreateFolder(getDriveRootName(), null);
+    const q       = `name='${DRIVE_FILE_NAME}' and '${rootId}' in parents and trashed=false`;
+    const resp    = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=1`,
+      { headers: { Authorization: 'Bearer ' + driveAccessToken } }
+    );
+    const d    = await resp.json();
+    const file = d.files?.[0];
+
+    if (_splashSkipped) return; // utilisateur a cliqué "continuer"
+
+    if (!file) {
+      // Aucun fichier Drive → afficher directement
+      showAppAfterSplash();
+      return;
+    }
+
+    const driveTs    = new Date(file.modifiedTime).getTime();
+    const lastRestore = parseInt(localStorage.getItem('projetPlage_lastRestoreTs') || '0');
+    const localData   = localStorage.getItem('projetPlageData');
+
+    if (!localData || driveTs > lastRestore) {
+      // Drive plus récent → restaurer
+      showSplash('Restauration en cours…');
+      const cr = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
+        { headers: { Authorization: 'Bearer ' + driveAccessToken } }
+      );
+      const payload = await cr.json();
+      if (payload.data && !_splashSkipped) {
+        data = payload.data;
+        saveData();
+        if (payload.messages) localStorage.setItem(MESSAGES_KEY, JSON.stringify(payload.messages));
+        localStorage.setItem('projetPlage_lastRestoreTs', Date.now().toString());
+        Object.keys(driveFolderCache).forEach(k => delete driveFolderCache[k]);
+        showSplash('✅ Données restaurées !');
+        await new Promise(r => setTimeout(r, 800));
+      }
+    }
+  } catch(e) {
+    console.warn('loginRestoreFlow:', e);
+  }
+
+  showAppAfterSplash();
+}
+
+function showAppAfterSplash() {
+  hideSplash();
+  refreshAll();
+  showTab('tab-dashboard');
+  if (currentUser?.role === 'admin') renderThresholdSelector();
+  startPresence();
+  checkInboxTabVisibility();
+  loadDriveLastBackup();
+  loadAutoBackupSettings();
+}
+
+// ═══════════════════════════════════════════════════════
+//  DÉTAIL GROUPE
+// ═══════════════════════════════════════════════════════
+function openGroupDetail(gid) {
+  const g = data.groups.find(x => x.id === gid);
+  if (!g) return;
+
+  const statusClass = { pending:'status-pending', validated:'status-validated', rejected:'status-rejected' }[g.status];
+  const statusLabel = { pending:'⏳ En attente', validated:'✅ Validé', rejected:'❌ Rejeté' }[g.status];
+
+  document.getElementById('gdp-title').textContent = g.name;
+  const st = document.getElementById('gdp-status');
+  st.className = 'status-badge ' + statusClass;
+  st.textContent = statusLabel;
+
+  const projs      = data.projects.filter(p => p.groupId === gid);
+  const budgetUsed = projs.reduce((s, p) => s + (parseFloat(p.price)||0), 0);
+  const isAdmin    = currentUser?.role === 'admin';
+
+  // Accessoires combinés depuis tous les projets du groupe
+  const allAcc = [];
+  projs.forEach(p => (p.accessories||[]).forEach(a => {
+    if (!allAcc.find(x => x.id === a.id)) allAcc.push({ ...a, _projTitle: p.title, _projId: p.id });
+  }));
+
+  const body = document.getElementById('group-detail-body');
+
+  body.innerHTML = `
+    <!-- Image couverture -->
+    ${g.image ? `<img src="${g.image}" style="width:100%;height:200px;object-fit:cover;border-radius:14px;margin-bottom:20px;">` : ''}
+
+    <!-- Infos groupe -->
+    <div class="panel" style="margin-bottom:20px;">
+      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;">
+        <div style="flex:1;min-width:180px;">
+          ${g.desc ? `<p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">${g.desc}</p>` : ''}
+          <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.88rem;font-weight:700;">
+            <span>🏖 <strong>${projs.length}</strong> projet(s)</span>
+            ${g.budget ? `<span>💰 Budget max : <strong>${parseFloat(g.budget).toLocaleString('fr-FR')} €</strong></span>` : ''}
+            ${budgetUsed > 0 ? `<span>📊 Utilisé : <strong style="color:var(--coral)">${budgetUsed.toLocaleString('fr-FR')} €</strong></span>` : ''}
+            <span>🎒 <strong>${allAcc.length}</strong> accessoire(s)</span>
+          </div>
+          ${g.budget && budgetUsed > 0 ? `
+            <div style="margin-top:10px;">
+              <div style="background:var(--border);border-radius:6px;height:8px;overflow:hidden;">
+                <div style="background:${budgetUsed>parseFloat(g.budget)?'var(--coral)':'var(--palm)'};width:${Math.min(100,(budgetUsed/parseFloat(g.budget))*100)}%;height:100%;border-radius:6px;"></div>
+              </div>
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:3px;">${Math.round((budgetUsed/parseFloat(g.budget))*100)}% du budget</div>
+            </div>` : ''}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${isAdmin && g.status==='pending' ? `
+            <button class="btn btn-success btn-sm" onclick="setGroupStatus('${g.id}','validated');openGroupDetail('${g.id}')">✅ Valider</button>
+            <button class="btn btn-danger btn-sm" onclick="setGroupStatus('${g.id}','rejected');openGroupDetail('${g.id}')">❌ Rejeter</button>` : ''}
+          <button class="btn btn-sm" style="background:#e8f4fd;color:var(--ocean);" onclick="openChatOnTopic('grp_${g.id}')">💬 Discuter</button>
+          <button class="btn btn-sm" style="background:var(--foam);color:var(--ocean);" onclick="closeGroupDetail();openEditGroup('${g.id}')">✏️ Modifier</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Projets associés -->
+    <div class="panel-title" style="margin-bottom:14px;">🏖 Projets du groupe (${projs.length})</div>
+    ${projs.length === 0
+      ? '<div class="empty-state"><div class="icon">🏖</div><p>Aucun projet dans ce groupe</p></div>'
+      : `<div class="projects-grid" style="margin-bottom:24px;">
+          ${projs.map(p => {
+            const valStatus = getProjectValidation(p);
+            const votes = p.votes||[];
+            const threshold = data.validationThreshold||2;
+            const pct = Math.min(100,(votes.length/threshold)*100);
+            return `
+              <div style="background:white;border-radius:14px;border:2px solid ${valStatus==='validated'?'var(--palm)':'var(--border)'};overflow:hidden;transition:transform 0.2s;cursor:pointer;" onclick="closeGroupDetail();showTab('tab-projects');setBottomNav('bn-projects')">
+                <img src="${p.image||'https://placehold.co/400x140/caf0f8/0077b6?text=Photo'}" style="width:100%;height:130px;object-fit:cover;" onerror="this.style.display='none'">
+                <div style="padding:12px;">
+                  <div style="font-weight:800;font-size:0.95rem;color:var(--ocean-deep);margin-bottom:6px;">${p.title}</div>
+                  <div style="display:flex;gap:10px;font-size:0.82rem;margin-bottom:8px;">
+                    ${p.price?`<span style="color:var(--coral);font-weight:800;">${parseFloat(p.price).toLocaleString('fr-FR')} €</span>`:''}
+                    ${p.rating?`<span style="color:var(--sand);">⭐ ${p.rating}/5</span>`:''}
+                  </div>
+                  <div style="background:#e0e0e0;border-radius:5px;height:6px;overflow:hidden;margin-bottom:4px;">
+                    <div style="background:${valStatus==='validated'?'var(--palm)':'var(--sand)'};width:${pct}%;height:100%;border-radius:5px;"></div>
+                  </div>
+                  <div style="font-size:0.7rem;color:var(--text-muted);">Votes : ${votes.length}/${threshold} ${valStatus==='validated'?'✅':''}</div>
+                  ${(p.accessories||[]).length>0?`<div style="margin-top:6px;font-size:0.72rem;color:var(--ocean);font-weight:700;">🎒 ${(p.accessories||[]).length} accessoire(s)</div>`:''}
+                </div>
+              </div>`;
+          }).join('')}
+        </div>`
+    }
+
+    <!-- Accessoires du groupe -->
+    ${allAcc.length > 0 ? `
+      <div class="panel-title" style="margin-bottom:14px;">🎒 Accessoires associés (${allAcc.length})</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:20px;">
+        ${allAcc.map(a => `
+          <div style="background:white;border-radius:12px;border:2px solid ${a.validated?'var(--palm)':'var(--border)'};overflow:hidden;">
+            ${a.image?`<img src="${a.image}" style="width:100%;height:110px;object-fit:cover;" onerror="this.style.display='none'">`
+              :'<div style="width:100%;height:110px;background:var(--foam);display:flex;align-items:center;justify-content:center;font-size:2rem;">🎒</div>'}
+            <div style="padding:10px;">
+              <div style="font-weight:800;font-size:0.85rem;color:var(--ocean-deep);">${a.name}</div>
+              ${a.price?`<div style="color:var(--coral);font-weight:800;font-size:0.88rem;">${parseFloat(a.price).toLocaleString('fr-FR')} €</div>`:''}
+              <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px;">Projet : ${a._projTitle}</div>
+              ${a.validated?'<div style="font-size:0.72rem;color:var(--palm);font-weight:700;margin-top:3px;">✅ Validé</div>':''}
+            </div>
+          </div>`).join('')}
+      </div>` : ''}
+
+    <button class="btn btn-primary" onclick="closeGroupDetail();showTab('tab-projects');setBottomNav('bn-projects')" style="width:100%;">
+      ➕ Ajouter un projet à ce groupe
+    </button>
+  `;
+
+  document.getElementById('group-detail-panel').classList.add('open');
+}
+
+function closeGroupDetail() {
+  document.getElementById('group-detail-panel').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
 loadData();
 initLoginScreen();
 initPWA();
