@@ -2235,8 +2235,8 @@ header {
     <button class="bottom-nav-btn" id="bn-budget" onclick="showTab('tab-budget');setBottomNav('bn-budget')">
       <span class="bnb-icon">💰</span>Budget
     </button>
-    <button class="bottom-nav-btn" id="bn-inbox" onclick="showTab('tab-inbox');setBottomNav('bn-inbox')" style="display:none;">
-      <span class="bnb-icon">📨</span>Messages
+    <button class="bottom-nav-btn" id="bn-inbox" onclick="showTab('tab-inbox');setBottomNav('bn-inbox')">
+      <span class="bnb-icon">💬</span>Messages
     </button>
     <button class="bottom-nav-btn admin-tab" id="bn-admin" onclick="showTab('tab-admin');setBottomNav('bn-admin')" style="display:none;">
       <span class="bnb-icon">⚙️</span>Admin
@@ -2248,7 +2248,7 @@ header {
     <button class="nav-tab" onclick="showTab('tab-groups')" id="nt-groups">📁 Groupes</button>
     <button class="nav-tab" onclick="showTab('tab-projects')" id="nt-projects">🏖 Projets</button>
     <button class="nav-tab" onclick="showTab('tab-budget')" id="nt-budget">💰 Budget</button>
-    <button class="nav-tab" onclick="showTab('tab-inbox')" id="nt-inbox" style="display:none;">📨 Mes messages</button>
+    <button class="nav-tab" onclick="showTab('tab-inbox')" id="nt-inbox">💬 Messages</button>
     <button class="nav-tab admin-only" onclick="showTab('tab-admin')" id="nt-admin">⚙️ Administration</button>
   </div>
 
@@ -2396,10 +2396,22 @@ header {
       </div>
     </div>
 
-    <!-- ──────── MES MESSAGES (INBOX) ──────── -->
+    <!-- ──────── MESSAGES ──────── -->
     <div class="tab-section" id="tab-inbox">
       <div class="panel" id="inbox-panel">
-        <div class="panel-title">📨 Mes messages envoyés</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
+          <div class="panel-title" style="margin:0;">💬 Messages</div>
+          <div style="display:flex;gap:8px;background:var(--bg);border-radius:10px;padding:4px;">
+            <button id="inbox-btn-all" class="btn btn-primary btn-sm" onclick="setInboxView('all')">🌍 Tous</button>
+            <button id="inbox-btn-mine" class="btn btn-sm" style="background:transparent;color:var(--text-muted);" onclick="setInboxView('mine')">👤 Mes messages</button>
+          </div>
+        </div>
+        <!-- Barre de recherche messages -->
+        <div style="margin-bottom:16px;">
+          <input type="text" id="inbox-search" placeholder="🔍 Rechercher dans les messages…"
+            oninput="renderInbox()"
+            style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:0.9rem;font-family:'Nunito',sans-serif;box-sizing:border-box;">
+        </div>
         <div id="inbox-content"></div>
       </div>
     </div>
@@ -3076,6 +3088,7 @@ function doLogin() {
 
 function doLogout() {
   stopPresence();
+  stopDrivePoll();
   closeChat();
   document.getElementById('chat-fab').style.display = 'none';
   const hoc = document.getElementById('header-online-count');
@@ -3136,16 +3149,17 @@ function renderVoteBar(p) {
   const hasVoted = votes.includes(currentUser.id);
   const thresholdPct = 100; // le marqueur est toujours à 100% (= la cible)
 
-  // Avatars des votants
+  // Avatars des votants avec nom au survol
   const avatarHtml = Array.from({length: threshold}, (_, i) => {
     const vid = votes[i];
     if (vid) {
       const voter = data.profiles.find(pr => pr.id === vid);
       if (voter) {
-        return `<div class="vote-avatar-sm" style="background:${voter.color}" title="${voter.name}">${voter.name[0].toUpperCase()}</div>`;
+        const isCurrent = voter.id === currentUser?.id;
+        return `<div class="vote-avatar-sm" style="background:${voter.color};${isCurrent?'box-shadow:0 0 0 2px white,0 0 0 4px '+voter.color+';':''}" title="${voter.name}${isCurrent?' (vous)':''}">${voter.name[0].toUpperCase()}</div>`;
       }
     }
-    return `<div class="vote-avatar-empty" title="En attente"></div>`;
+    return `<div class="vote-avatar-empty" title="Vote manquant"></div>`;
   }).join('');
 
   const badgeClass = status === 'validated' ? 'pvb-validated' : status === 'pending' ? 'pvb-pending' : 'pvb-pending';
@@ -3157,6 +3171,12 @@ function renderVoteBar(p) {
     ? `<button class="btn-unvote" onclick="toggleVote('${p.id}')">✖ Retirer mon vote</button>`
     : (status !== 'validated' ? `<button class="btn-vote" onclick="toggleVote('${p.id}')">👍 Valider ce projet</button>` : '');
 
+  // Noms des votants en texte
+  const voterNames = votes.map(vid => {
+    const vp = data.profiles.find(pr => pr.id === vid);
+    return vp ? `<span style="background:${vp.color};color:white;padding:2px 7px;border-radius:8px;font-size:0.72rem;font-weight:700;">${vp.name.split(' ')[0]}</span>` : '';
+  }).join(' ');
+
   return `
     <div class="vote-bar-wrap">
       <div class="vote-bar-header">
@@ -3166,8 +3186,11 @@ function renderVoteBar(p) {
       <div class="vote-track">
         <div class="vote-fill ${fillClass}" style="width:${pct}%"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div class="vote-avatars">${avatarHtml}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <div class="vote-avatars">${avatarHtml}</div>
+          ${voterNames ? `<div style="display:flex;gap:4px;flex-wrap:wrap;">${voterNames}</div>` : '<span style="font-size:0.72rem;color:var(--text-muted);">Aucun vote</span>'}
+        </div>
         ${voteBtn}
       </div>
     </div>
@@ -4830,7 +4853,8 @@ function driveHandleToken(resp) {
     Object.keys(driveFolderCache).forEach(k => delete driveFolderCache[k]);
     updateDriveUI();
     loadDriveLastBackup();
-    driveCheckForNewBackup();   // ← vérifier si fichier plus récent
+    driveCheckForNewBackup();
+    startDrivePoll();   // ← poll toutes les 60s
     toast(`☁️ Drive connecté : ${driveUserInfo.name} (${driveUserInfo.email})`, 'success');
   })
   .catch(() => {
@@ -4851,6 +4875,7 @@ function driveToggleConnect() {
     driveUserInfo    = null;
     localStorage.removeItem(DRIVE_ACCOUNT_KEY);
     Object.keys(driveFolderCache).forEach(k => delete driveFolderCache[k]);
+    stopDrivePoll();
     updateDriveUI();
     toast('Déconnecté de Drive', '');
   } else {
@@ -5337,68 +5362,114 @@ async function driveRestoreFromNotif() {
 //  INBOX — DOSSIER DE MESSAGES PAR UTILISATEUR
 // ═══════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════
+//  MESSAGES TAB — vue tous + vue personnelle
+// ═══════════════════════════════════════════════════════
+let _inboxView = 'all'; // 'all' | 'mine'
+
+function setInboxView(v) {
+  _inboxView = v;
+  const btnAll  = document.getElementById('inbox-btn-all');
+  const btnMine = document.getElementById('inbox-btn-mine');
+  if (btnAll)  { btnAll.className  = v==='all'  ? 'btn btn-primary btn-sm' : 'btn btn-sm'; btnAll.style.cssText  = v==='all'  ? '' : 'background:transparent;color:var(--text-muted);'; }
+  if (btnMine) { btnMine.className = v==='mine' ? 'btn btn-primary btn-sm' : 'btn btn-sm'; btnMine.style.cssText = v==='mine' ? '' : 'background:transparent;color:var(--text-muted);'; }
+  renderInbox();
+}
+
 function checkInboxTabVisibility() {
-  if (!currentUser) return;
-  const allMsgs = loadMessages();
-  const hasMsg  = allMsgs.some(m => m.authorId === currentUser.id);
-  const tab   = document.getElementById('nt-inbox');
+  // Toujours visible
+  const tab     = document.getElementById('nt-inbox');
   const bnInbox = document.getElementById('bn-inbox');
-  if (tab)     tab.style.display     = hasMsg ? 'inline-flex' : 'none';
-  if (bnInbox) bnInbox.style.display = hasMsg ? 'flex'        : 'none';
+  if (tab)     tab.style.display     = 'inline-flex';
+  if (bnInbox) bnInbox.style.display = 'flex';
 }
 
 function renderInbox() {
   if (!currentUser) return;
-  const allMsgs = loadMessages().filter(m => m.authorId === currentUser.id);
   const container = document.getElementById('inbox-content');
   if (!container) return;
+  const search   = (document.getElementById('inbox-search')?.value || '').toLowerCase();
+  const allMsgs  = loadMessages();
+  const topics   = getChatTopics();
 
-  if (allMsgs.length === 0) {
+  // Filtrage selon le mode
+  let msgs = _inboxView === 'mine'
+    ? allMsgs.filter(m => m.authorId === currentUser.id)
+    : allMsgs;
+
+  // Filtrage recherche
+  if (search) msgs = msgs.filter(m =>
+    m.text.toLowerCase().includes(search) ||
+    (data.profiles.find(p=>p.id===m.authorId)?.name||'').toLowerCase().includes(search)
+  );
+
+  if (msgs.length === 0) {
     container.innerHTML = `
       <div class="inbox-empty">
-        <div style="font-size:3rem;margin-bottom:10px;">📭</div>
-        <p style="font-size:1rem;font-weight:600;">Vous n'avez pas encore envoyé de message.<br>Ouvrez la messagerie pour commencer !</p>
+        <div style="font-size:3rem;margin-bottom:10px;">${_inboxView==='mine'?'📭':'💬'}</div>
+        <p style="font-size:1rem;font-weight:600;">${_inboxView==='mine'
+          ? 'Vous n\'avez pas encore envoyé de message.'
+          : 'Aucun message pour l\'instant.'}</p>
         <button class="btn btn-primary" style="margin-top:15px;" onclick="openChat()">💬 Ouvrir la messagerie</button>
       </div>`;
     return;
   }
 
-  // Stats
-  const highlighted = allMsgs.filter(m => m.highlighted).length;
-  const topics      = getChatTopics();
-  const topicIds    = [...new Set(allMsgs.map(m => m.topicId))];
+  // Stats globales
+  const totalAll     = allMsgs.length;
+  const totalMine    = allMsgs.filter(m=>m.authorId===currentUser.id).length;
+  const totalPinned  = allMsgs.filter(m=>m.highlighted).length;
+  const activeUsers  = [...new Set(allMsgs.map(m=>m.authorId))].length;
+
+  // Regrouper par topic
+  const topicIds = [...new Set(msgs.map(m => m.topicId))];
 
   container.innerHTML = `
-    <div class="inbox-stats">
-      <div class="inbox-stat"><div class="inbox-stat-val">${allMsgs.length}</div><div class="inbox-stat-lbl">Messages envoyés</div></div>
-      <div class="inbox-stat" style="border-top-color:var(--sand)"><div class="inbox-stat-val" style="color:var(--sand)">${highlighted}</div><div class="inbox-stat-lbl">Mis en évidence 📌</div></div>
-      <div class="inbox-stat" style="border-top-color:var(--palm)"><div class="inbox-stat-val" style="color:var(--palm)">${topicIds.length}</div><div class="inbox-stat-lbl">Sujets actifs</div></div>
+    <!-- Stats -->
+    <div class="inbox-stats" style="margin-bottom:20px;">
+      <div class="inbox-stat"><div class="inbox-stat-val">${totalAll}</div><div class="inbox-stat-lbl">Messages total</div></div>
+      <div class="inbox-stat" style="border-top-color:var(--ocean)"><div class="inbox-stat-val" style="color:var(--ocean)">${activeUsers}</div><div class="inbox-stat-lbl">Participants</div></div>
+      <div class="inbox-stat" style="border-top-color:var(--sand)"><div class="inbox-stat-val" style="color:var(--sand)">${totalPinned}</div><div class="inbox-stat-lbl">Épinglés 📌</div></div>
+      <div class="inbox-stat" style="border-top-color:var(--palm)"><div class="inbox-stat-val" style="color:var(--palm)">${totalMine}</div><div class="inbox-stat-lbl">Mes messages</div></div>
     </div>
-  ` + topicIds.map(tid => {
-    const topic   = topics.find(t => t.id === tid) || { name: tid, icon: '💬' };
-    const tMsgs   = allMsgs.filter(m => m.topicId === tid).sort((a,b) => a.timestamp - b.timestamp);
-    const now     = Date.now();
-    return `
-      <div class="inbox-topic-group">
-        <div class="inbox-topic-header">
-          <span>${topic.icon}</span>
-          <span>${topic.name}</span>
-          <span style="margin-left:auto;opacity:0.7;font-size:0.78rem;">${tMsgs.length} message${tMsgs.length>1?'s':''}</span>
-          <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;margin-left:8px;padding:4px 10px;"
-            onclick="openChatOnTopic('${tid}')">Ouvrir ↗</button>
-        </div>
-        ${tMsgs.map(m => `
-          <div class="inbox-msg-row ${m.highlighted ? 'highlighted-msg' : ''}">
-            <div class="inbox-msg-text">${m.highlighted ? `<span class="inbox-msg-pin">📌 ${m.highlightNote||'Important'}</span> ` : ''}${escapeHtml(m.text)}</div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-              <span class="inbox-msg-time">${formatMsgTime(m.timestamp, now)}</span>
-              ${m.highlighted ? '' : `<button class="msg-action-btn" style="font-size:0.8rem;" onclick="openHighlightModal('${m.id}');openChat();">📌</button>`}
-            </div>
+
+    <!-- Messages par topic -->
+    ${topicIds.map(tid => {
+      const topic   = topics.find(t=>t.id===tid) || { name: tid, icon: '💬' };
+      const tMsgs   = msgs.filter(m=>m.topicId===tid).sort((a,b)=>a.timestamp-b.timestamp);
+      const now     = Date.now();
+      return `
+        <div class="inbox-topic-group">
+          <div class="inbox-topic-header">
+            <span>${topic.icon}</span>
+            <span>${topic.name}</span>
+            <span style="margin-left:auto;opacity:0.7;font-size:0.78rem;">${tMsgs.length} message${tMsgs.length>1?'s':''}</span>
+            <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;margin-left:8px;padding:4px 10px;"
+              onclick="openChatOnTopic('${tid}')">Ouvrir ↗</button>
           </div>
-        `).join('')}
-      </div>
-    `;
-  }).join('');
+          ${tMsgs.map(m => {
+            const author  = data.profiles.find(p=>p.id===m.authorId);
+            const isMine  = m.authorId === currentUser.id;
+            return `
+              <div class="inbox-msg-row ${m.highlighted?'highlighted-msg':''}"
+                style="border-left-color:${author?author.color:'var(--border)'}">
+                <div style="display:flex;align-items:center;gap:8px;min-width:90px;flex-shrink:0;">
+                  <div style="width:26px;height:26px;border-radius:50%;background:${author?author.color:'#ccc'};display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:800;color:white;flex-shrink:0;">${author?author.name[0].toUpperCase():'?'}</div>
+                  <span style="font-size:0.72rem;font-weight:700;color:${author?author.color:'var(--text-muted)'};">${isMine?'Vous':author?author.name.split(' ')[0]:'?'}</span>
+                </div>
+                <div class="inbox-msg-text">
+                  ${m.highlighted?`<span class="inbox-msg-pin">📌 ${m.highlightNote||'Important'}</span> `:''}
+                  ${escapeHtml(m.text)}
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+                  <span class="inbox-msg-time">${formatMsgTime(m.timestamp, now)}</span>
+                  ${!m.highlighted?`<button class="msg-action-btn" style="font-size:0.75rem;" onclick="openHighlightModal('${m.id}');openChat()">📌</button>`:''}
+                </div>
+              </div>`;
+          }).join('')}
+        </div>`;
+    }).join('')}
+  `;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -5902,6 +5973,52 @@ showTab = function(tabId) {
   _realShowTab(tabId);
   if (_tabToBn[tabId]) setBottomNav(_tabToBn[tabId]);
 };
+
+// ─── Sync auto Drive (poll 60s) ───
+let _drivePollTimer = null;
+function startDrivePoll() {
+  stopDrivePoll();
+  _drivePollTimer = setInterval(async () => {
+    if (!driveAuthed || driveBackingUp) return;
+    try {
+      const rootId = await driveGetOrCreateFolder(getDriveRootName(), null);
+      const q = `name='${DRIVE_FILE_NAME}' and '${rootId}' in parents and trashed=false`;
+      const resp = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,modifiedTime)&orderBy=modifiedTime desc&pageSize=1`,
+        { headers: { Authorization: 'Bearer ' + driveAccessToken } }
+      );
+      const d = await resp.json();
+      const file = d.files?.[0];
+      if (!file) return;
+      const driveTs    = new Date(file.modifiedTime).getTime();
+      const lastRestore = parseInt(localStorage.getItem('projetPlage_lastRestoreTs') || '0');
+      if (driveTs > lastRestore + 5000) {
+        // Données Drive plus récentes → sync silencieux
+        const cr = await fetch(
+          `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
+          { headers: { Authorization: 'Bearer ' + driveAccessToken } }
+        );
+        const payload = await cr.json();
+        if (payload.data) {
+          data = payload.data;
+          localStorage.setItem('projetPlageData', JSON.stringify(data));
+          if (payload.messages) localStorage.setItem(MESSAGES_KEY, JSON.stringify(payload.messages));
+          localStorage.setItem('projetPlage_lastRestoreTs', Date.now().toString());
+          // Rafraîchir l'interface silencieusement
+          if (document.getElementById('tab-dashboard')?.classList.contains('active')) renderDashboard();
+          if (document.getElementById('tab-projects')?.classList.contains('active')) renderProjects();
+          if (document.getElementById('tab-groups')?.classList.contains('active')) renderGroups();
+          if (document.getElementById('tab-inbox')?.classList.contains('active')) renderInbox();
+          updateFabBadge();
+          showSyncIndicator('saved');
+        }
+      }
+    } catch(e) { /* silencieux */ }
+  }, 60000); // toutes les 60 secondes
+}
+function stopDrivePoll() {
+  if (_drivePollTimer) { clearInterval(_drivePollTimer); _drivePollTimer = null; }
+}
 
 // ═══════════════════════════════════════════════════════
 //  SPLASH — RESTAURATION AUTO AU LOGIN
