@@ -2560,7 +2560,12 @@ header {
               style="flex:1;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:'Nunito',sans-serif;">
             <button class="btn btn-primary btn-sm" onclick="saveDriveClientId()">Enregistrer</button>
           </div>
-          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Activez l'API Google Drive + OAuth sur votre projet Google Cloud. Ajoutez cette URL en origine autorisée.</p>
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">
+            Structure Drive créée automatiquement :<br>
+            📁 <em>Projet Plage Pro — votre@email.com</em> /
+            📁 <em>💾 Sauvegardes</em> / ProjetPlage_backup.json + 📁 Historique<br>
+            📁 <em>💬 Échanges Messages</em> / 📁 Par Sujet + 📁 Par Membre
+          </p>
         </div>
         <div style="margin-top:14px;">
           <div style="font-size:0.82rem;font-weight:700;color:var(--ocean-deep);margin-bottom:8px;">Sauvegardes automatiques :</div>
@@ -4881,9 +4886,14 @@ const DRIVE_SCOPE          = [
   'https://www.googleapis.com/auth/userinfo.profile'
 ].join(' ');
 const DRIVE_ROOT_NAME      = 'Projet Plage Pro';
-const DRIVE_MSG_FOLDER     = 'Messages';
+const DRIVE_BACKUP_FOLDER  = '💾 Sauvegardes';
+const DRIVE_HIST_FOLDER    = 'Historique';
+const DRIVE_MSG_ROOT       = '💬 Échanges Messages';
+const DRIVE_MSG_BY_SUBJECT = 'Par Sujet';
+const DRIVE_MSG_BY_MEMBER  = 'Par Membre';
 const DRIVE_FILE_NAME      = 'ProjetPlage_backup.json';
-const DRIVE_ACCOUNT_KEY    = 'projetPlage_driveAccount';  // {email, name, picture}
+const DRIVE_ALL_MSGS_FILE  = 'tous_messages.json';
+const DRIVE_ACCOUNT_KEY    = 'projetPlage_driveAccount';
 
 let driveReady       = false;
 let driveAuthed      = false;
@@ -5071,12 +5081,20 @@ function updateDriveUI() {
 ══════════════════════════════════════════ */
 
 /**
- * Nom du dossier racine Drive = "Projet Plage Pro — email@gmail.com"
- * → chaque compte Google a son propre espace isolé
+ * Nom du dossier racine Drive par compte Google
  */
 function getDriveRootName() {
   const email = driveUserInfo?.email || JSON.parse(localStorage.getItem(DRIVE_ACCOUNT_KEY) || 'null')?.email;
   return email ? `${DRIVE_ROOT_NAME} — ${email}` : DRIVE_ROOT_NAME;
+}
+
+/**
+ * Retourne l'ID du dossier 💾 Sauvegardes/ (crée si besoin)
+ */
+async function getBackupFolderId() {
+  const rootId   = await driveGetOrCreateFolder(getDriveRootName(), null);
+  const backupId = await driveGetOrCreateFolder(DRIVE_BACKUP_FOLDER, rootId);
+  return backupId;
 }
 
 /**
@@ -5168,64 +5186,102 @@ async function driveDoBackup() {
 
   try {
     const rootName = getDriveRootName();
-    const rootId   = await driveGetOrCreateFolder(rootName, null);
-    const msgsId   = await driveGetOrCreateFolder(DRIVE_MSG_FOLDER, rootId);
-    const histId   = await driveGetOrCreateFolder('Historique', rootId);
-
+    const allMsgs  = loadMessages();
     const exportedAt = new Date().toISOString();
+
+    // ── Arborescence Drive ──────────────────────────────
+    // 📁 Projet Plage Pro — email/
+    //   ├── 📁 💾 Sauvegardes/
+    //   │   ├── ProjetPlage_backup.json
+    //   │   └── 📁 Historique/
+    //   │       └── backup_DATE.json
+    //   └── 📁 💬 Échanges Messages/
+    //       ├── tous_messages.json
+    //       ├── 📁 Par Sujet/
+    //       │   ├── General.json
+    //       │   └── Projet_xxx.json
+    //       └── 📁 Par Membre/
+    //           ├── 📁 Marie_Dupont/
+    //           │   ├── messages.json
+    //           │   └── importants.json
+    //           └── ...
+
+    const rootId     = await driveGetOrCreateFolder(rootName, null);
+    const backupId   = await driveGetOrCreateFolder(DRIVE_BACKUP_FOLDER, rootId);
+    const histId     = await driveGetOrCreateFolder(DRIVE_HIST_FOLDER, backupId);
+    const msgRootId  = await driveGetOrCreateFolder(DRIVE_MSG_ROOT, rootId);
+    const subjId     = await driveGetOrCreateFolder(DRIVE_MSG_BY_SUBJECT, msgRootId);
+    const membersId  = await driveGetOrCreateFolder(DRIVE_MSG_BY_MEMBER, msgRootId);
+
+    // ── 1. Sauvegarde principale dans 💾 Sauvegardes/ ──
     const payload = {
-      timestamp:  Date.now(),
-      exportedAt,
+      timestamp: Date.now(), exportedAt,
       driveAccount: driveUserInfo,
-      version: '3.0',
-      data,
-      messages: loadMessages()
+      version: '4.0', data,
+      messages: allMsgs
     };
     const payloadStr = JSON.stringify(payload, null, 2);
+    await driveUploadFile(DRIVE_FILE_NAME, payloadStr, backupId);
 
-    // 1. Fichier principal (écrasé)
-    await driveUploadFile(DRIVE_FILE_NAME, payloadStr, rootId);
-
-    // 2. Version horodatée dans Historique/ (ex: backup_2025-07-14_09h30.json)
-    const ts = new Date().toLocaleString('fr-FR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
-      .replace(/[/:]/g,'-').replace(', ','-').replace(' ','').replace('h','-');
-    const versionedName = `backup_${ts}.json`;
-    await driveUploadFile(versionedName, payloadStr, histId);
-
-    // Nettoyage : garder les 10 derniers dans Historique
+    // ── 2. Version horodatée dans Historique/ ──
+    const ts = new Date().toLocaleString('fr-FR', {
+      year:'numeric', month:'2-digit', day:'2-digit',
+      hour:'2-digit', minute:'2-digit'
+    }).replace(/[/:]/g,'-').replace(', ','-').replace('h','-');
+    await driveUploadFile(`backup_${ts}.json`, payloadStr, histId);
     await drivePruneHistory(histId, 10);
 
-    // 3. Messages par utilisateur
-    const allMsgs = loadMessages();
+    // ── 3. Export global de tous les messages ──
+    await driveUploadFile(DRIVE_ALL_MSGS_FILE, JSON.stringify({
+      exportedAt, totalMessages: allMsgs.length,
+      participants: [...new Set(allMsgs.map(m => m.authorId))].length,
+      messages: allMsgs
+    }, null, 2), msgRootId);
+
+    // ── 4. Messages Par Sujet/ ──
+    const topics = getChatTopics();
+    const topicIds = [...new Set(allMsgs.map(m => m.topicId))];
+    for (const tid of topicIds) {
+      const topic = topics.find(t => t.id === tid) || { name: tid, icon: '💬' };
+      const tMsgs = allMsgs.filter(m => m.topicId === tid);
+      const safeTopic = (topic.icon + '_' + topic.name).replace(/[^a-zA-Z0-9_\-]/g, '_').slice(0, 40);
+      await driveUploadFile(`${safeTopic}.json`, JSON.stringify({
+        topic: { id: tid, name: topic.name, icon: topic.icon },
+        exportedAt, count: tMsgs.length, messages: tMsgs
+      }, null, 2), subjId);
+    }
+
+    // ── 5. Messages Par Membre/ ──
     const userIds = [...new Set(allMsgs.map(m => m.authorId))];
     for (const uid of userIds) {
-      const profile = data.profiles.find(p => p.id === uid);
+      const profile   = data.profiles.find(p => p.id === uid);
       if (!profile) continue;
-      const userMsgs   = allMsgs.filter(m => m.authorId === uid);
-      const safeName   = profile.name.replace(/[^a-zA-Z0-9]/g, '_');
-      const userFoldId = await driveGetOrCreateFolder(safeName, msgsId);
-      const userPayload = {
+      const userMsgs  = allMsgs.filter(m => m.authorId === uid);
+      const safeName  = profile.name.replace(/[^a-zA-Z0-9]/g, '_');
+      const memberFId = await driveGetOrCreateFolder(safeName, membersId);
+
+      await driveUploadFile('messages.json', JSON.stringify({
         user: { id: uid, name: profile.name, code: profile.code, color: profile.color },
-        totalMessages: userMsgs.length,
+        exportedAt, totalMessages: userMsgs.length,
         highlighted: userMsgs.filter(m => m.highlighted).length,
         messages: userMsgs,
-        topics: getChatTopics()
+        topicsActive: topics
           .filter(t => userMsgs.some(m => m.topicId === t.id))
-          .map(t => ({ id: t.id, name: t.name, icon: t.icon, count: userMsgs.filter(m => m.topicId === t.id).length })),
-        exportedAt
-      };
-      await driveUploadFile(`PlageMsg_${safeName}.json`, JSON.stringify(userPayload, null, 2), userFoldId);
+          .map(t => ({ id: t.id, name: t.name, icon: t.icon, count: userMsgs.filter(m => m.topicId === t.id).length }))
+      }, null, 2), memberFId);
+
       const pinned = userMsgs.filter(m => m.highlighted);
       if (pinned.length > 0) {
-        await driveUploadFile(`PlageMsg_${safeName}_Importants.json`,
-          JSON.stringify({ user: profile.name, importantMessages: pinned, exportedAt }, null, 2),
-          userFoldId);
+        await driveUploadFile('importants.json', JSON.stringify({
+          user: profile.name, exportedAt,
+          count: pinned.length, messages: pinned
+        }, null, 2), memberFId);
       }
     }
 
     const now = new Date().toLocaleString('fr-FR');
     localStorage.setItem('projetPlage_lastBackup', now);
-    localStorage.setItem('projetPlage_lastRestoreTs', Date.now().toString()); // on vient d'écrire = pas de notif
+    localStorage.setItem('projetPlage_lastRestoreTs', Date.now().toString());
     const account = driveUserInfo?.email || '';
     const lbl = document.getElementById('drive-last-backup');
     if (lbl) lbl.innerHTML = `✅ <strong>${now}</strong> · ${userIds.length} membre(s) · <span style="color:var(--ocean)">${account}</span>`;
@@ -5234,7 +5290,7 @@ async function driveDoBackup() {
   } catch(e) {
     console.error('Drive backup:', e);
     if (btn) updateDriveUI();
-    throw e;   // relancer pour que scheduleDriveSync puisse catcher
+    throw e;
   } finally {
     driveBackingUp = false;
   }
@@ -5305,10 +5361,11 @@ async function driveRestore() {
   try {
     const rootName = getDriveRootName();
     const rootId   = await driveGetOrCreateFolder(rootName, null);
-    const histId   = await driveGetOrCreateFolder('Historique', rootId);
+    const backupId = await driveGetOrCreateFolder(DRIVE_BACKUP_FOLDER, rootId);
+    const histId   = await driveGetOrCreateFolder(DRIVE_HIST_FOLDER, backupId);
 
-    // Fichier principal
-    const qMain = `name='${DRIVE_FILE_NAME}' and '${rootId}' in parents and trashed=false`;
+    // Fichier principal dans 💾 Sauvegardes/
+    const qMain = `name='${DRIVE_FILE_NAME}' and '${backupId}' in parents and trashed=false`;
     const mainResp = await fetch(
       `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(qMain)}&fields=files(id,name,modifiedTime,size)`,
       { headers: { Authorization: 'Bearer ' + driveAccessToken } }
@@ -5316,7 +5373,7 @@ async function driveRestore() {
     const mainData = await mainResp.json();
     const mainFiles = (mainData.files || []).map(f => ({ ...f, type: 'main' }));
 
-    // Fichiers historique
+    // Fichiers historique dans 💾 Sauvegardes/Historique/
     const qHist = `'${histId}' in parents and trashed=false and mimeType='application/json'`;
     const histResp = await fetch(
       `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(qHist)}&fields=files(id,name,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=20`,
@@ -5418,8 +5475,8 @@ let _pendingRestoreFileId = null;
 async function driveCheckForNewBackup() {
   if (!driveAuthed) return;
   try {
-    const rootId  = await driveGetOrCreateFolder(getDriveRootName(), null);
-    const q       = `name='${DRIVE_FILE_NAME}' and '${rootId}' in parents and trashed=false`;
+    const backupId = await getBackupFolderId();
+    const q        = `name='${DRIVE_FILE_NAME}' and '${backupId}' in parents and trashed=false`;
     const resp    = await fetch(
       `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=1`,
       { headers: { Authorization: 'Bearer ' + driveAccessToken } }
@@ -6203,8 +6260,8 @@ function stopDrivePoll() {
 async function drivePollTick() {
   if (!driveAuthed || driveBackingUp) return;
   try {
-    const rootId = await driveGetOrCreateFolder(getDriveRootName(), null);
-    const q = `name='${DRIVE_FILE_NAME}' and '${rootId}' in parents and trashed=false`;
+    const backupId = await getBackupFolderId();
+    const q = `name='${DRIVE_FILE_NAME}' and '${backupId}' in parents and trashed=false`;
     // Appel léger : seulement id + modifiedTime
     const resp = await fetch(
       `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=1`,
@@ -6316,8 +6373,8 @@ async function loginRestoreFlow() {
   _splashSkipped = false;
 
   try {
-    const rootId  = await driveGetOrCreateFolder(getDriveRootName(), null);
-    const q       = `name='${DRIVE_FILE_NAME}' and '${rootId}' in parents and trashed=false`;
+    const backupId = await getBackupFolderId();
+    const q        = `name='${DRIVE_FILE_NAME}' and '${backupId}' in parents and trashed=false`;
     const resp    = await fetch(
       `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=1`,
       { headers: { Authorization: 'Bearer ' + driveAccessToken } }
