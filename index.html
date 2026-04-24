@@ -810,6 +810,128 @@ header {
 }
 
 /* ═══════════════════════════════════════
+   IMAGE GROUPE
+════════════════════════════════════════ */
+.group-cover {
+  width: 100%; height: 130px; object-fit: cover;
+  border-radius: 14px 14px 0 0; display: block;
+}
+.group-cover-placeholder {
+  width: 100%; height: 130px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.8rem; border-radius: 14px 14px 0 0;
+  background: linear-gradient(135deg, var(--ocean-deep), var(--ocean));
+}
+
+/* ═══════════════════════════════════════
+   ACCESSOIRES
+════════════════════════════════════════ */
+.acc-panel {
+  position: fixed; top: 0; right: -700px;
+  width: 700px; max-width: 100vw; height: 100vh;
+  background: var(--bg);
+  box-shadow: -8px 0 40px rgba(0,0,0,0.18);
+  z-index: 900; display: flex; flex-direction: column;
+  transition: right 0.35s cubic-bezier(0.77,0,0.18,1); overflow: hidden;
+}
+.acc-panel.open { right: 0; }
+
+.acc-panel-header {
+  background: linear-gradient(135deg, var(--ocean-deep), var(--palm));
+  color: white; padding: 18px 22px;
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+.acc-panel-title { font-family:'Pacifico',cursive; font-size:1.15rem; flex:1; }
+.acc-close-btn {
+  background: rgba(255,255,255,0.2); border:none; color:white;
+  width:34px; height:34px; border-radius:50%; font-size:1.1rem;
+  cursor:pointer; font-family:'Nunito',sans-serif;
+  display:flex; align-items:center; justify-content:center; transition:background 0.2s;
+}
+.acc-close-btn:hover { background:rgba(255,255,255,0.35); }
+
+.acc-project-ref {
+  padding: 10px 22px; background: white;
+  border-bottom: 1.5px solid var(--border);
+  font-size: 0.82rem; font-weight: 700; color: var(--text-muted);
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0; flex-wrap: wrap;
+}
+
+.acc-body { flex: 1; overflow-y: auto; padding: 18px; }
+
+.acc-add-form {
+  background: white; border-radius: 14px; padding: 18px;
+  margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  border: 2px dashed var(--border);
+}
+.acc-add-form.expanded { border-style: solid; border-color: var(--ocean); }
+
+.acc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px,1fr)); gap:16px; }
+
+.acc-card {
+  background: white; border-radius: 14px; border: 2px solid var(--border);
+  overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; position: relative;
+}
+.acc-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+.acc-card.acc-validated { border-color: var(--palm); box-shadow: 0 0 15px rgba(42,157,143,0.25); }
+.acc-card.acc-combined  { border-color: var(--sand); }
+
+.acc-card-img { width:100%; height:150px; object-fit:cover; display:block; }
+.acc-card-img-placeholder {
+  width:100%; height:150px; background:linear-gradient(135deg,var(--foam),#b0dff0);
+  display:flex; align-items:center; justify-content:center; font-size:2.5rem;
+}
+.acc-card-body { padding: 14px; }
+.acc-card-name { font-weight:800; font-size:0.95rem; color:var(--ocean-deep); margin-bottom:6px; }
+.acc-card-price { font-weight:800; color:var(--coral); font-size:1rem; }
+.acc-card-info { font-size:0.8rem; color:var(--text-muted); margin:6px 0 10px; line-height:1.4; }
+
+.acc-status-pin {
+  position:absolute; top:8px; left:8px;
+  font-size:0.68rem; font-weight:800; padding:3px 8px; border-radius:8px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.2);
+}
+.acc-status-pin.validated { background:var(--palm); color:white; }
+.acc-status-pin.combined  { background:var(--sand); color:var(--ocean-deep); top:8px; left:auto; right:8px; }
+
+.acc-vote-wrap { margin:8px 0; background:var(--bg); border-radius:8px; padding:8px 10px; }
+.acc-vote-track { height:7px; background:#e0e0e0; border-radius:7px; overflow:hidden; margin:5px 0; }
+.acc-vote-fill-p { background:linear-gradient(90deg,var(--sand),#f5c518); height:100%; border-radius:7px; transition:width 0.5s; }
+.acc-vote-fill-v { background:linear-gradient(90deg,var(--palm),#48c774); height:100%; border-radius:7px; transition:width 0.5s; }
+
+.acc-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+
+.combine-select {
+  width:100%; padding:8px 12px; border:2px solid var(--border); border-radius:10px;
+  font-family:'Nunito',sans-serif; font-size:0.85rem; margin-top:6px; background:white;
+}
+
+.combined-projects-list { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+.combined-proj-tag {
+  background:var(--foam); color:var(--ocean-deep); padding:3px 9px; border-radius:10px;
+  font-size:0.75rem; font-weight:700; border:1px solid #b0dff0;
+  display:flex; align-items:center; gap:4px;
+}
+.combined-proj-tag button {
+  background:none; border:none; color:var(--coral); cursor:pointer;
+  font-size:0.8rem; padding:0; line-height:1; font-family:'Nunito',sans-serif;
+}
+
+.proj-acc-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  background:linear-gradient(135deg,#e8f4fd,var(--foam));
+  color:var(--ocean); border:1px solid #b0dff0; padding:3px 9px; border-radius:10px;
+  font-size:0.75rem; font-weight:800; cursor:pointer; transition:background 0.15s;
+}
+.proj-acc-badge:hover { background:linear-gradient(135deg,var(--foam),#b0dff0); }
+
+@media (max-width: 700px) {
+  .acc-panel { width: 100vw; }
+  .acc-grid { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════════════════════════════
    SYSTÈME DE VOTES
 ════════════════════════════════════════ */
 .vote-bar-wrap {
@@ -977,6 +1099,53 @@ header {
   border-color: var(--ocean);
   background: var(--ocean);
   color: white;
+}
+
+/* Sync indicator */
+#drive-sync-indicator {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 8px;
+  transition: all 0.3s;
+  white-space: nowrap;
+  display: none;
+}
+
+/* Restore modal */
+.restore-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.restore-modal-overlay.open { display: flex; }
+.restore-modal-box {
+  background: white;
+  border-radius: 20px;
+  padding: 28px;
+  width: 540px;
+  max-width: 96vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.restore-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.restore-modal-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--ocean-deep);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* ═══════════════════════════════════════
@@ -1815,7 +1984,11 @@ header {
             <label>Budget max du groupe (€)</label>
             <input type="number" id="grp-budget" placeholder="5000">
           </div>
-          <div class="form-group full">
+          <div class="form-group">
+            <label>Image de couverture (URL)</label>
+            <input type="url" id="grp-image" placeholder="https://... lien vers une photo">
+          </div>
+          <div class="form-group">
             <label>Description</label>
             <input type="text" id="grp-desc" placeholder="Description du groupe...">
           </div>
@@ -1955,7 +2128,10 @@ header {
           <div style="font-size:0.82rem;font-weight:700;color:var(--ocean-deep);margin-bottom:8px;">Sauvegardes automatiques :</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
             <label class="remember-row" style="background:var(--bg);padding:8px 14px;border-radius:10px;margin:0;">
-              <input type="checkbox" id="auto-backup-msg" onchange="saveAutoBackupSettings()"> À chaque message envoyé
+              <input type="checkbox" id="auto-backup-always" onchange="saveAutoBackupSettings()" checked> À chaque modification
+            </label>
+            <label class="remember-row" style="background:var(--bg);padding:8px 14px;border-radius:10px;margin:0;">
+              <input type="checkbox" id="auto-backup-msg" onchange="saveAutoBackupSettings()"> À chaque message
             </label>
             <label class="remember-row" style="background:var(--bg);padding:8px 14px;border-radius:10px;margin:0;">
               <input type="checkbox" id="auto-backup-vote" onchange="saveAutoBackupSettings()" checked> À chaque validation
@@ -2224,6 +2400,82 @@ header {
   </div>
 </div>
 
+<!-- ACCESSORIES PANEL -->
+<div class="chat-overlay" id="acc-overlay" onclick="closeAccessoriesPanel()"></div>
+<div class="acc-panel" id="acc-panel">
+  <div class="acc-panel-header">
+    <div class="acc-panel-title">🎒 Accessoires</div>
+    <div id="acc-panel-project-name" style="font-size:0.85rem;opacity:0.85;"></div>
+    <button class="acc-close-btn" onclick="closeAccessoriesPanel()">✕</button>
+  </div>
+  <div class="acc-project-ref" id="acc-project-ref"></div>
+
+  <div class="acc-body" id="acc-body">
+
+    <!-- Formulaire ajout -->
+    <div class="acc-add-form" id="acc-add-form">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleAccForm()">
+        <div style="font-weight:800;color:var(--ocean-deep);font-size:0.95rem;">➕ Ajouter un accessoire</div>
+        <span id="acc-form-arrow" style="font-size:1.2rem;transition:transform 0.2s;">▼</span>
+      </div>
+      <div id="acc-form-fields" style="display:none;margin-top:16px;">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nom de l'accessoire *</label>
+            <input type="text" id="acc-name" placeholder="Ex: Parasol, Glacière...">
+          </div>
+          <div class="form-group">
+            <label>Prix (€)</label>
+            <input type="number" id="acc-price" placeholder="25">
+          </div>
+          <div class="form-group full">
+            <label>Image (URL lien web)</label>
+            <input type="url" id="acc-image" placeholder="https://... lien image">
+          </div>
+          <div class="form-group full">
+            <label>Infos / description</label>
+            <textarea id="acc-info" rows="2" placeholder="Couleur, taille, marque, où acheter..."></textarea>
+          </div>
+        </div>
+        <div style="margin-top:14px;">
+          <label style="font-weight:700;font-size:0.85rem;color:var(--ocean-deep);display:block;margin-bottom:6px;">Combiner avec d'autres projets</label>
+          <select id="acc-combine-select" class="combine-select" multiple size="3">
+          </select>
+          <p style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Ctrl+clic pour sélectionner plusieurs projets</p>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="btn btn-success" style="flex:1" onclick="addAccessory()">✅ Ajouter l'accessoire</button>
+          <button class="btn" style="background:#eee;color:#333;" onclick="toggleAccForm()">Annuler</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Résumé budget accessoires -->
+    <div id="acc-budget-summary" style="display:none;background:white;border-radius:12px;padding:12px 16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;gap:15px;flex-wrap:wrap;"></div>
+
+    <!-- Grille accessoires -->
+    <div class="acc-grid" id="acc-grid">
+      <div class="empty-state" style="grid-column:1/-1;">
+        <div class="icon">🎒</div>
+        <p>Aucun accessoire encore.<br>Ajoutez votre premier !</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DRIVE RESTORE MODAL -->
+<div id="drive-restore-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1100; align-items:center; justify-content:center;">
+  <div class="restore-modal-box">
+    <div class="restore-modal-header">
+      <div class="restore-modal-title">📥 Restaurer depuis Google Drive</div>
+      <button class="modal-close" onclick="driveCloseRestoreModal()">✕</button>
+    </div>
+    <div id="drive-restore-account" style="font-size:0.83rem;color:var(--text-muted);margin-bottom:16px;font-weight:600;"></div>
+    <div id="drive-restore-list"></div>
+  </div>
+</div>
+
 <!-- PWA INSTALL MODAL -->
 <div id="pwa-install-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:2000; align-items:flex-end; justify-content:center;">
   <div style="background:white; border-radius:24px 24px 0 0; width:100%; max-width:520px; padding:28px 28px 40px; box-shadow:0 -10px 50px rgba(0,0,0,0.3); animation:slideUp 0.35s cubic-bezier(0.34,1.56,0.64,1);">
@@ -2342,8 +2594,53 @@ function loadData() {
   }
 }
 
+// ──── Indicateur de sync Drive dans le header ────
+function showSyncIndicator(state) {
+  // state: 'saving' | 'saved' | 'error' | 'offline'
+  let el = document.getElementById('drive-sync-indicator');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'drive-sync-indicator';
+    el.style.cssText = 'font-size:0.7rem;font-weight:700;padding:3px 8px;border-radius:8px;transition:all 0.3s;white-space:nowrap;';
+    const wrap = document.getElementById('drive-status-wrap');
+    if (wrap) wrap.insertBefore(el, wrap.firstChild);
+  }
+  const states = {
+    saving:  { text: '☁️ ⏳ Sync…',    bg: '#fff3e0', color: '#e65100' },
+    saved:   { text: '☁️ ✅ Sauvé',    bg: '#e8f5e9', color: '#1b5e20' },
+    error:   { text: '☁️ ❌ Erreur',   bg: '#fce4ec', color: '#880e4f' },
+    offline: { text: '💾 Local',        bg: '#f5f5f5', color: '#666'    }
+  };
+  const s = states[state] || states.offline;
+  el.textContent = s.text;
+  el.style.background = s.bg;
+  el.style.color = s.color;
+  el.style.display = 'inline-block';
+  if (state === 'saved') setTimeout(() => { if (el) el.style.display = 'none'; }, 3000);
+}
+
+// ──── Debounce Drive sync ────
+let _driveSyncTimer = null;
+function scheduleDriveSync() {
+  if (!driveAuthed) { showSyncIndicator('offline'); return; }
+  // Respecter le réglage "À chaque modification"
+  const always = document.getElementById('auto-backup-always');
+  if (always && !always.checked) return;
+  clearTimeout(_driveSyncTimer);
+  showSyncIndicator('saving');
+  _driveSyncTimer = setTimeout(async () => {
+    try {
+      await driveDoBackup();
+      showSyncIndicator('saved');
+    } catch(e) {
+      showSyncIndicator('error');
+    }
+  }, 1500);  // 1.5s après la dernière modif
+}
+
 function saveData() {
   localStorage.setItem('projetPlageData', JSON.stringify(data));
+  scheduleDriveSync();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2681,17 +2978,19 @@ function addGroup() {
   const group = {
     id: 'g' + Date.now(),
     name,
+    image:  document.getElementById('grp-image').value.trim(),
     budget: document.getElementById('grp-budget').value,
-    desc: document.getElementById('grp-desc').value,
+    desc:   document.getElementById('grp-desc').value,
     status: 'pending',
     createdBy: currentUser.id
   };
 
   data.groups.push(group);
   saveData();
-  document.getElementById('grp-name').value = '';
+  document.getElementById('grp-name').value   = '';
+  document.getElementById('grp-image').value  = '';
   document.getElementById('grp-budget').value = '';
-  document.getElementById('grp-desc').value = '';
+  document.getElementById('grp-desc').value   = '';
   updateGroupSelects();
   renderGroups();
   toast('Groupe créé ! ✅', 'success');
@@ -2736,8 +3035,11 @@ function renderGroups() {
 
     return `
       <div class="group-card">
+        ${g.image
+          ? `<img class="group-cover" src="${g.image}" alt="${g.name}" onerror="this.style.display='none'">`
+          : `<div class="group-cover-placeholder">📁</div>`}
         <div class="group-header">
-          <div class="group-name">📁 ${g.name}</div>
+          <div class="group-name">${g.name}</div>
           <span class="status-badge ${statusClass}">${statusLabel}</span>
         </div>
         <div class="group-body">
@@ -2865,6 +3167,7 @@ function saveProject() {
     beach: document.getElementById('proj-beach').value,
     equipment: [...selectedEquipments],
     votes: editId ? (data.projects.find(p=>p.id===editId)?.votes || []) : [],
+    accessories: editId ? (data.projects.find(p=>p.id===editId)?.accessories || []) : [],
     createdBy: currentUser.id,
     isFinal: false
   };
@@ -2974,6 +3277,9 @@ function renderProjects() {
           <div class="project-actions">
             <button class="btn ${isFinal ? 'btn-sand' : 'btn-success'} btn-sm" onclick="setFinalProject('${p.id}')">
               ${isFinal ? '✅ Choix final' : '🎯 Choisir'}
+            </button>
+            <button class="proj-acc-badge" onclick="openAccessoriesPanel('${p.id}')">
+              🎒 Accessoires ${p.accessories && p.accessories.length > 0 ? `<strong>(${p.accessories.length})</strong>` : ''}
             </button>
             <button class="btn btn-sm" style="background:#e8f4fd;color:var(--ocean);" onclick="openChatOnTopic('prj_${p.id}')">💬</button>
             ${isOwner ? `
@@ -4294,52 +4600,58 @@ async function driveDoBackup() {
   if (btn) btn.textContent = '☁️ ⏳';
 
   try {
-    // ── Arborescence Drive PER COMPTE ──
-    // 📁 Projet Plage Pro — jean@gmail.com/
-    //   ├── ProjetPlage_backup.json
-    //   └── 📁 Messages/
-    //       ├── 📁 Marie_Dupont/
-    //       │   ├── PlageMsg_Marie_Dupont.json
-    //       │   └── PlageMsg_Marie_Dupont_Importants.json
-    //       └── …
-
     const rootName = getDriveRootName();
     const rootId   = await driveGetOrCreateFolder(rootName, null);
     const msgsId   = await driveGetOrCreateFolder(DRIVE_MSG_FOLDER, rootId);
+    const histId   = await driveGetOrCreateFolder('Historique', rootId);
 
-    // 1. Sauvegarde globale dans le dossier racine
-    const payload = { timestamp: Date.now(), data, version: '2.0', exportedAt: new Date().toISOString() };
-    await driveUploadFile(DRIVE_FILE_NAME, JSON.stringify(payload, null, 2), rootId);
+    const exportedAt = new Date().toISOString();
+    const payload = {
+      timestamp:  Date.now(),
+      exportedAt,
+      driveAccount: driveUserInfo,
+      version: '3.0',
+      data,
+      messages: loadMessages()
+    };
+    const payloadStr = JSON.stringify(payload, null, 2);
 
-    // 2. Sauvegarde messages par utilisateur dans leur dossier
+    // 1. Fichier principal (écrasé)
+    await driveUploadFile(DRIVE_FILE_NAME, payloadStr, rootId);
+
+    // 2. Version horodatée dans Historique/ (ex: backup_2025-07-14_09h30.json)
+    const ts = new Date().toLocaleString('fr-FR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
+      .replace(/[/:]/g,'-').replace(', ','-').replace(' ','').replace('h','-');
+    const versionedName = `backup_${ts}.json`;
+    await driveUploadFile(versionedName, payloadStr, histId);
+
+    // Nettoyage : garder les 10 derniers dans Historique
+    await drivePruneHistory(histId, 10);
+
+    // 3. Messages par utilisateur
     const allMsgs = loadMessages();
     const userIds = [...new Set(allMsgs.map(m => m.authorId))];
-
     for (const uid of userIds) {
       const profile = data.profiles.find(p => p.id === uid);
       if (!profile) continue;
-
       const userMsgs   = allMsgs.filter(m => m.authorId === uid);
       const safeName   = profile.name.replace(/[^a-zA-Z0-9]/g, '_');
       const userFoldId = await driveGetOrCreateFolder(safeName, msgsId);
-
-      // Fichier principal de messages
       const userPayload = {
         user: { id: uid, name: profile.name, code: profile.code, color: profile.color },
         totalMessages: userMsgs.length,
         highlighted: userMsgs.filter(m => m.highlighted).length,
         messages: userMsgs,
-        topics: getChatTopics().filter(t => userMsgs.some(m => m.topicId === t.id))
-                               .map(t => ({ id: t.id, name: t.name, icon: t.icon, count: userMsgs.filter(m => m.topicId === t.id).length })),
-        exportedAt: new Date().toISOString()
+        topics: getChatTopics()
+          .filter(t => userMsgs.some(m => m.topicId === t.id))
+          .map(t => ({ id: t.id, name: t.name, icon: t.icon, count: userMsgs.filter(m => m.topicId === t.id).length })),
+        exportedAt
       };
       await driveUploadFile(`PlageMsg_${safeName}.json`, JSON.stringify(userPayload, null, 2), userFoldId);
-
-      // Fichier récap des messages épinglés (si existants)
       const pinned = userMsgs.filter(m => m.highlighted);
       if (pinned.length > 0) {
         await driveUploadFile(`PlageMsg_${safeName}_Importants.json`,
-          JSON.stringify({ user: profile.name, importantMessages: pinned, exportedAt: new Date().toISOString() }, null, 2),
+          JSON.stringify({ user: profile.name, importantMessages: pinned, exportedAt }, null, 2),
           userFoldId);
       }
     }
@@ -4350,12 +4662,11 @@ async function driveDoBackup() {
     const lbl = document.getElementById('drive-last-backup');
     if (lbl) lbl.innerHTML = `✅ <strong>${now}</strong> · ${userIds.length} membre(s) · <span style="color:var(--ocean)">${account}</span>`;
     if (btn) { btn.textContent = '☁️ ✅'; setTimeout(() => updateDriveUI(), 3000); }
-    toast(`☁️ Sauvegarde Drive : ${account || 'OK'} !`, 'success');
 
   } catch(e) {
     console.error('Drive backup:', e);
     if (btn) updateDriveUI();
-    toast('Erreur Drive : ' + e.message, 'error');
+    throw e;   // relancer pour que scheduleDriveSync puisse catcher
   } finally {
     driveBackingUp = false;
   }
@@ -4376,54 +4687,154 @@ function driveAutoBackup(trigger) {
 }
 
 function saveAutoBackupSettings() {
-  const autoMsg  = document.getElementById('auto-backup-msg')?.checked;
-  const autoVote = document.getElementById('auto-backup-vote')?.checked;
-  localStorage.setItem(DRIVE_AUTO_KEY, JSON.stringify({ msg: autoMsg, vote: autoVote }));
+  const a = document.getElementById('auto-backup-always')?.checked;
+  const m = document.getElementById('auto-backup-msg')?.checked;
+  const v = document.getElementById('auto-backup-vote')?.checked;
+  localStorage.setItem(DRIVE_AUTO_KEY, JSON.stringify({ always: a, msg: m, vote: v }));
 }
 
 function loadAutoBackupSettings() {
   try {
     const s = JSON.parse(localStorage.getItem(DRIVE_AUTO_KEY) || '{}');
+    const a = document.getElementById('auto-backup-always');
     const m = document.getElementById('auto-backup-msg');
     const v = document.getElementById('auto-backup-vote');
-    if (m) m.checked = s.msg  !== false;
-    if (v) v.checked = s.vote !== false;
+    if (a) a.checked = s.always !== false;
+    if (m) m.checked = s.msg   === true;
+    if (v) v.checked = s.vote  !== false;
   } catch(e) {}
 }
 
-async function driveRestore() {
-  if (!driveAuthed) { toast('Connectez Google Drive d\'abord', 'error'); return; }
-  if (!confirm('⚠️ Restaurer depuis Google Drive ?\nLes données locales seront remplacées.')) return;
+/** Garde uniquement les N fichiers les plus récents dans un dossier */
+async function drivePruneHistory(folderId, keep = 10) {
   try {
-    // Chercher le fichier de backup dans le dossier du compte actuel
-    const rootName = getDriveRootName();
-    const rootId   = await driveGetOrCreateFolder(rootName, null);
-    const q        = `name='${DRIVE_FILE_NAME}' and '${rootId}' in parents and trashed=false`;
-    const searchResp = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,modifiedTime)&orderBy=modifiedTime desc`,
+    const q = `'${folderId}' in parents and trashed=false and mimeType='application/json'`;
+    const resp = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,modifiedTime)&orderBy=modifiedTime desc&pageSize=50`,
       { headers: { Authorization: 'Bearer ' + driveAccessToken } }
     );
-    const searchData = await searchResp.json();
-    const file = searchData.files?.[0];
-    if (!file) { toast('Aucune sauvegarde trouvée sur Drive', 'error'); return; }
+    const d = await resp.json();
+    const toDelete = (d.files || []).slice(keep);
+    await Promise.all(toDelete.map(f =>
+      fetch(`https://www.googleapis.com/drive/v3/files/${f.id}/trash`, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + driveAccessToken }
+      })
+    ));
+  } catch(e) { console.warn('Pruning history:', e); }
+}
 
+/** Ouvre la modale de restauration avec la liste des sauvegardes Drive */
+async function driveRestore() {
+  if (!driveAuthed) { toast('Connectez Google Drive d\'abord', 'error'); return; }
+  const modal = document.getElementById('drive-restore-modal');
+  const list  = document.getElementById('drive-restore-list');
+  const accEl = document.getElementById('drive-restore-account');
+  if (accEl) accEl.innerHTML = `☁️ <strong>${getDriveRootName()}</strong><br><span style="font-size:0.78rem;">Sélectionnez une sauvegarde à restaurer. Les données locales seront remplacées.</span>`;
+  list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);">⏳ Recherche des sauvegardes…</div>';
+  modal.style.display = 'flex';
+
+  try {
+    const rootName = getDriveRootName();
+    const rootId   = await driveGetOrCreateFolder(rootName, null);
+    const histId   = await driveGetOrCreateFolder('Historique', rootId);
+
+    // Fichier principal
+    const qMain = `name='${DRIVE_FILE_NAME}' and '${rootId}' in parents and trashed=false`;
+    const mainResp = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(qMain)}&fields=files(id,name,modifiedTime,size)`,
+      { headers: { Authorization: 'Bearer ' + driveAccessToken } }
+    );
+    const mainData = await mainResp.json();
+    const mainFiles = (mainData.files || []).map(f => ({ ...f, type: 'main' }));
+
+    // Fichiers historique
+    const qHist = `'${histId}' in parents and trashed=false and mimeType='application/json'`;
+    const histResp = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(qHist)}&fields=files(id,name,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=20`,
+      { headers: { Authorization: 'Bearer ' + driveAccessToken } }
+    );
+    const histData  = await histResp.json();
+    const histFiles = (histData.files || []).map(f => ({ ...f, type: 'history' }));
+
+    const all = [...mainFiles, ...histFiles].sort((a, b) =>
+      new Date(b.modifiedTime) - new Date(a.modifiedTime)
+    );
+
+    if (all.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>Aucune sauvegarde trouvée pour ce compte.</p></div>';
+      return;
+    }
+
+    list.innerHTML = all.map((f, i) => {
+      const d    = new Date(f.modifiedTime);
+      const date = d.toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+      const ago  = timeAgo(d);
+      const kb   = f.size ? (parseInt(f.size)/1024).toFixed(1) + ' Ko' : '';
+      const tag  = f.type === 'main'
+        ? '<span style="background:#e8f5e9;color:#1b5e20;padding:2px 8px;border-radius:8px;font-size:0.72rem;font-weight:800;">Actuel</span>'
+        : '<span style="background:var(--foam);color:var(--ocean);padding:2px 8px;border-radius:8px;font-size:0.72rem;font-weight:700;">Historique</span>';
+
+      return `
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:${i===0?'#f0f9ff':'white'};border-radius:12px;border:1.5px solid ${i===0?'var(--ocean)':'var(--border)'};margin-bottom:8px;">
+          <div style="font-size:1.4rem;flex-shrink:0;">${f.type==='main'?'⭐':'🕐'}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:800;font-size:0.9rem;color:var(--ocean-deep);">${date} ${tag}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);">${ago}${kb?' · '+kb:''}</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="driveRestoreFile('${f.id}','${date}')">📥 Restaurer</button>
+        </div>
+      `;
+    }).join('');
+
+  } catch(e) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>Erreur : ${e.message}</p></div>`;
+  }
+}
+
+function driveCloseRestoreModal() {
+  document.getElementById('drive-restore-modal').style.display = 'none';
+}
+
+async function driveRestoreFile(fileId, label) {
+  if (!confirm(`⚠️ Restaurer la sauvegarde du :\n${label}\n\nLes données locales actuelles seront remplacées.`)) return;
+  driveCloseRestoreModal();
+  toast('📥 Restauration en cours…', '');
+  try {
     const contentResp = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
+      `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
       { headers: { Authorization: 'Bearer ' + driveAccessToken } }
     );
     const payload = await contentResp.json();
+
     if (payload.data) {
       data = payload.data;
       saveData();
+      // Restaurer aussi les messages s'ils sont dans le fichier
+      if (payload.messages) {
+        localStorage.setItem(MESSAGES_KEY, JSON.stringify(payload.messages));
+      }
       Object.keys(driveFolderCache).forEach(k => delete driveFolderCache[k]);
       refreshAll();
-      const modified = new Date(file.modifiedTime).toLocaleString('fr-FR');
-      toast(`📥 Données restaurées (sauvegarde du ${modified}) !`, 'success');
+      toast(`✅ Données restaurées (${label}) !`, 'success');
+    } else {
+      toast('Format de sauvegarde non reconnu', 'error');
     }
   } catch(e) {
-    console.error('Drive restore:', e);
+    console.error(e);
     toast('Erreur restauration : ' + e.message, 'error');
   }
+}
+
+function timeAgo(date) {
+  const diff = Date.now() - date.getTime();
+  const m = Math.floor(diff / 60000);
+  const h = Math.floor(diff / 3600000);
+  const d = Math.floor(diff / 86400000);
+  if (m < 1)  return 'À l\'instant';
+  if (m < 60) return `Il y a ${m} min`;
+  if (h < 24) return `Il y a ${h}h`;
+  return `Il y a ${d} jour${d > 1 ? 's' : ''}`;
 }
 
 function loadDriveLastBackup() {
@@ -4500,8 +4911,335 @@ function renderInbox() {
 }
 
 // ═══════════════════════════════════════════════════════
-//  INIT FINAL
+//  ACCESSOIRES
 // ═══════════════════════════════════════════════════════
+
+let currentAccProjectId = null;
+
+function openAccessoriesPanel(pid) {
+  currentAccProjectId = pid;
+  const proj = data.projects.find(p => p.id === pid);
+  if (!proj) return;
+  const group = data.groups.find(g => g.id === proj.groupId);
+
+  document.getElementById('acc-panel-project-name').textContent = proj.title;
+  document.getElementById('acc-project-ref').innerHTML = `
+    ${group ? `<span style="background:${getGroupColor(group.id)};color:white;padding:2px 8px;border-radius:8px;font-size:0.75rem;font-weight:700;">${group.name}</span>` : ''}
+    <span>📌 ${proj.title}</span>
+    ${proj.price ? `<span style="color:var(--coral);font-weight:800;">${parseFloat(proj.price).toLocaleString('fr-FR')} €</span>` : ''}
+    <span style="margin-left:auto;font-size:0.78rem;">${(proj.accessories||[]).length} accessoire(s)</span>
+  `;
+
+  // Peupler le select de combinaison
+  const sel = document.getElementById('acc-combine-select');
+  sel.innerHTML = data.projects
+    .filter(p => p.id !== pid)
+    .map(p => `<option value="${p.id}">${p.title}</option>`)
+    .join('');
+
+  document.getElementById('acc-panel').classList.add('open');
+  document.getElementById('acc-overlay').classList.add('open');
+  renderAccessories();
+}
+
+function closeAccessoriesPanel() {
+  document.getElementById('acc-panel').classList.remove('open');
+  document.getElementById('acc-overlay').classList.remove('open');
+  currentAccProjectId = null;
+  // Forcer re-rendu projets pour mettre à jour les badges
+  renderProjects();
+}
+
+function toggleAccForm() {
+  const fields = document.getElementById('acc-form-fields');
+  const arrow  = document.getElementById('acc-form-arrow');
+  const form   = document.getElementById('acc-add-form');
+  const open   = fields.style.display !== 'none';
+  fields.style.display = open ? 'none' : 'block';
+  arrow.style.transform = open ? '' : 'rotate(180deg)';
+  form.classList.toggle('expanded', !open);
+  if (!open) setTimeout(() => document.getElementById('acc-name').focus(), 100);
+}
+
+function addAccessory() {
+  const name = document.getElementById('acc-name').value.trim();
+  if (!name) { toast('Nom de l\'accessoire requis !', 'error'); return; }
+
+  const proj = data.projects.find(p => p.id === currentAccProjectId);
+  if (!proj) return;
+  if (!proj.accessories) proj.accessories = [];
+
+  // Projets combinés sélectionnés
+  const sel = document.getElementById('acc-combine-select');
+  const linkedProjects = Array.from(sel.selectedOptions).map(o => o.value);
+
+  const acc = {
+    id:             'acc' + Date.now(),
+    name,
+    image:          document.getElementById('acc-image').value.trim(),
+    price:          document.getElementById('acc-price').value,
+    info:           document.getElementById('acc-info').value.trim(),
+    votes:          [],
+    validated:      false,
+    linkedProjects,
+    createdBy:      currentUser.id,
+    createdAt:      Date.now()
+  };
+
+  proj.accessories.push(acc);
+
+  // Ajouter aussi cet accessoire aux projets combinés
+  linkedProjects.forEach(targetId => {
+    const target = data.projects.find(p => p.id === targetId);
+    if (target) {
+      if (!target.accessories) target.accessories = [];
+      // Copie liée (même ID pour reconnaitre le lien)
+      const linked = { ...acc, linkedProjects: [proj.id, ...linkedProjects.filter(x=>x!==targetId)] };
+      target.accessories.push(linked);
+    }
+  });
+
+  saveData();
+
+  // Reset form
+  ['acc-name','acc-image','acc-price','acc-info'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  Array.from(sel.options).forEach(o => o.selected = false);
+
+  renderAccessories();
+  toast(`🎒 Accessoire "${name}" ajouté !`, 'success');
+}
+
+function voteAccessory(pid, aid) {
+  const proj = data.projects.find(p => p.id === pid);
+  if (!proj) return;
+  const acc = (proj.accessories||[]).find(a => a.id === aid);
+  if (!acc) return;
+  if (!acc.votes) acc.votes = [];
+
+  const threshold = data.validationThreshold || 2;
+  if (acc.validated) { toast('Cet accessoire est déjà validé !', 'success'); return; }
+
+  const idx = acc.votes.indexOf(currentUser.id);
+  if (idx !== -1) {
+    acc.votes.splice(idx, 1);
+    toast('Vote retiré', '');
+  } else {
+    acc.votes.push(currentUser.id);
+    if (acc.votes.length >= threshold) {
+      acc.validated = true;
+      // Valider aussi dans les projets combinés
+      syncAccessoryToLinked(acc, pid);
+      toast(`🎉 Accessoire "${acc.name}" validé !`, 'success');
+    } else {
+      toast(`👍 Vote enregistré (${acc.votes.length}/${threshold})`, 'success');
+    }
+  }
+
+  syncAccessoryToLinked(acc, pid);
+  saveData();
+  renderAccessories();
+}
+
+function syncAccessoryToLinked(acc, sourcePid) {
+  (acc.linkedProjects || []).forEach(targetId => {
+    const target = data.projects.find(p => p.id === targetId);
+    if (!target || !target.accessories) return;
+    const tAcc = target.accessories.find(a => a.id === acc.id);
+    if (tAcc) {
+      tAcc.votes     = [...acc.votes];
+      tAcc.validated = acc.validated;
+    }
+  });
+}
+
+function removeAccessory(pid, aid) {
+  const proj = data.projects.find(p => p.id === pid);
+  if (!proj) return;
+  const acc = (proj.accessories||[]).find(a => a.id === aid);
+
+  // Retirer des projets liés aussi
+  if (acc) {
+    (acc.linkedProjects || []).forEach(targetId => {
+      const target = data.projects.find(p => p.id === targetId);
+      if (target && target.accessories) {
+        target.accessories = target.accessories.filter(a => a.id !== aid);
+      }
+    });
+  }
+
+  proj.accessories = (proj.accessories||[]).filter(a => a.id !== aid);
+  saveData();
+  renderAccessories();
+  toast('Accessoire supprimé', 'error');
+}
+
+function combineAccessoryWithProject(pid, aid) {
+  const sel = document.getElementById('combine-sel-' + aid);
+  if (!sel || !sel.value) return;
+  const targetId = sel.value;
+
+  const proj    = data.projects.find(p => p.id === pid);
+  const acc     = (proj?.accessories||[]).find(a => a.id === aid);
+  const target  = data.projects.find(p => p.id === targetId);
+
+  if (!acc || !target) return;
+  if (!target.accessories) target.accessories = [];
+
+  // Éviter les doublons
+  if (target.accessories.some(a => a.id === aid)) {
+    toast('Cet accessoire est déjà lié à ce projet', 'error'); return;
+  }
+
+  if (!acc.linkedProjects) acc.linkedProjects = [];
+  acc.linkedProjects.push(targetId);
+  const linked = { ...acc };
+  linked.linkedProjects = [pid, ...acc.linkedProjects.filter(x=>x!==targetId)];
+  target.accessories.push(linked);
+
+  saveData();
+  renderAccessories();
+  toast(`🔗 Accessoire combiné avec "${target.title}" !`, 'success');
+}
+
+function renderAccessories() {
+  const pid  = currentAccProjectId;
+  const proj = data.projects.find(p => p.id === pid);
+  if (!proj) return;
+
+  const accs      = proj.accessories || [];
+  const threshold = data.validationThreshold || 2;
+  const grid      = document.getElementById('acc-grid');
+  const summary   = document.getElementById('acc-budget-summary');
+
+  // Budget summary
+  const total     = accs.reduce((s,a) => s + (parseFloat(a.price)||0), 0);
+  const validated = accs.filter(a => a.validated).length;
+  const validBudget = accs.filter(a=>a.validated).reduce((s,a) => s + (parseFloat(a.price)||0), 0);
+
+  if (accs.length > 0) {
+    summary.style.display = 'flex';
+    summary.innerHTML = `
+      <div style="text-align:center;flex:1;min-width:80px;">
+        <div style="font-size:1.4rem;font-weight:800;color:var(--ocean);">${accs.length}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;">Total</div>
+      </div>
+      <div style="text-align:center;flex:1;min-width:80px;">
+        <div style="font-size:1.4rem;font-weight:800;color:var(--palm);">${validated}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;">Validés ✅</div>
+      </div>
+      <div style="text-align:center;flex:1;min-width:80px;">
+        <div style="font-size:1.4rem;font-weight:800;color:var(--coral);">${total > 0 ? total.toLocaleString('fr-FR')+' €' : '—'}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;">Budget total</div>
+      </div>
+      <div style="text-align:center;flex:1;min-width:80px;">
+        <div style="font-size:1.4rem;font-weight:800;color:var(--sand);">${validBudget > 0 ? validBudget.toLocaleString('fr-FR')+' €' : '—'}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;">Budget validé</div>
+      </div>
+    `;
+  } else {
+    summary.style.display = 'none';
+  }
+
+  if (accs.length === 0) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🎒</div><p>Aucun accessoire encore.<br>Ajoutez votre premier !</p></div>';
+    return;
+  }
+
+  const otherProjects = data.projects.filter(p => p.id !== pid);
+  const isOwnerOrAdmin = a => currentUser && (currentUser.id === a.createdBy || currentUser.role === 'admin');
+
+  // Trier : validés en haut, puis par votes décroissants
+  const sorted = [...accs].sort((a, b) => {
+    if (a.validated && !b.validated) return -1;
+    if (!a.validated && b.validated)  return 1;
+    return (b.votes||[]).length - (a.votes||[]).length;
+  });
+
+  grid.innerHTML = sorted.map(acc => {
+    const votes   = acc.votes || [];
+    const pct     = Math.min(100, (votes.length / threshold) * 100);
+    const fillCls = acc.validated ? 'acc-vote-fill-v' : 'acc-vote-fill-p';
+    const hasVote = votes.includes(currentUser.id);
+    const linked  = (acc.linkedProjects || []).map(lid => {
+      const lp = data.projects.find(p => p.id === lid);
+      return lp ? `<span class="combined-proj-tag">🔗 ${lp.title}<button onclick="unlinkAccessory('${pid}','${acc.id}','${lid}')">✕</button></span>` : '';
+    }).join('');
+
+    // Avatars votants
+    const voterAvatars = votes.map(vid => {
+      const vp = data.profiles.find(pr => pr.id === vid);
+      return vp ? `<div class="vote-avatar-sm" style="background:${vp.color};width:20px;height:20px;font-size:0.6rem;" title="${vp.name}">${vp.name[0]}</div>` : '';
+    }).join('');
+
+    return `
+      <div class="acc-card ${acc.validated ? 'acc-validated' : ''} ${acc.linkedProjects?.length > 0 ? 'acc-combined' : ''}">
+        ${acc.validated ? '<div class="acc-status-pin validated">✅ Validé</div>' : ''}
+        ${acc.linkedProjects?.length > 0 ? '<div class="acc-status-pin combined">🔗 Combiné</div>' : ''}
+        ${acc.image
+          ? `<img class="acc-card-img" src="${acc.image}" alt="${acc.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="acc-card-img-placeholder" style="display:none;">🎒</div>`
+          : `<div class="acc-card-img-placeholder">🎒</div>`}
+        <div class="acc-card-body">
+          <div class="acc-card-name">${acc.name}</div>
+          ${acc.price ? `<div class="acc-card-price">${parseFloat(acc.price).toLocaleString('fr-FR')} €</div>` : ''}
+          ${acc.info  ? `<div class="acc-card-info">${acc.info}</div>` : ''}
+
+          <!-- Barre de votes -->
+          <div class="acc-vote-wrap">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;font-weight:700;">
+              <span style="color:var(--text-muted);">${votes.length}/${threshold} vote(s)</span>
+              <div style="display:flex;gap:3px;">${voterAvatars}</div>
+            </div>
+            <div class="acc-vote-track">
+              <div class="${fillCls}" style="width:${pct}%"></div>
+            </div>
+          </div>
+
+          <!-- Projets liés -->
+          ${linked ? `<div style="margin-bottom:8px;"><div style="font-size:0.72rem;font-weight:700;color:var(--ocean);margin-bottom:4px;">Projets combinés :</div><div class="combined-projects-list">${linked}</div></div>` : ''}
+
+          <!-- Actions -->
+          <div class="acc-actions">
+            ${!acc.validated
+              ? hasVote
+                ? `<button class="btn-unvote" onclick="voteAccessory('${pid}','${acc.id}')">✖ Retirer vote</button>`
+                : `<button class="btn-vote" onclick="voteAccessory('${pid}','${acc.id}')">👍 Voter</button>`
+              : '<span style="color:var(--palm);font-weight:800;font-size:0.82rem;">✅ Validé</span>'
+            }
+            ${otherProjects.length > 0 ? `
+              <div style="display:flex;gap:5px;flex:1;min-width:130px;">
+                <select id="combine-sel-${acc.id}" class="combine-select" style="height:32px;padding:4px 8px;font-size:0.78rem;flex:1;">
+                  <option value="">+ Combiner avec…</option>
+                  ${otherProjects.map(p => `<option value="${p.id}">${p.title}</option>`).join('')}
+                </select>
+                <button class="btn btn-sand btn-sm" onclick="combineAccessoryWithProject('${pid}','${acc.id}')">🔗</button>
+              </div>
+            ` : ''}
+            ${isOwnerOrAdmin(acc) ? `<button class="btn btn-danger btn-sm" onclick="removeAccessory('${pid}','${acc.id}')">🗑</button>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function unlinkAccessory(pid, aid, targetId) {
+  const proj    = data.projects.find(p => p.id === pid);
+  const acc     = (proj?.accessories||[]).find(a => a.id === aid);
+  const target  = data.projects.find(p => p.id === targetId);
+
+  if (acc) acc.linkedProjects = (acc.linkedProjects||[]).filter(l => l !== targetId);
+  if (target && target.accessories) {
+    target.accessories = target.accessories.filter(a => a.id !== aid);
+  }
+  saveData();
+  renderAccessories();
+  toast('Lien supprimé', '');
+}
+
+// Overlay accessoires
+document.getElementById('acc-overlay').addEventListener('click', closeAccessoriesPanel);
+
+
 loadData();
 initLoginScreen();
 initPWA();
