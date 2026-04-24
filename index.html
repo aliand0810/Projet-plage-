@@ -2046,6 +2046,99 @@ header {
   font-family: monospace; margin: 10px 0;
 }
 
+/* ── Barre présence onglet messages ── */
+.tab-online-bar {
+  background: linear-gradient(135deg, var(--ocean-deep), var(--ocean));
+  color: white; padding: 10px 18px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  border-radius: 14px 14px 0 0; margin-bottom: 0;
+}
+
+/* ── Chat embarqué dans l'onglet ── */
+.tab-chat-wrap {
+  display: flex; height: calc(100dvh - 240px); min-height: 400px;
+  background: white; border-radius: 0 0 14px 14px;
+  border: 1.5px solid var(--border); overflow: hidden;
+  box-shadow: 0 2px 15px rgba(0,0,0,0.07);
+}
+
+.tab-chat-sidebar {
+  width: 160px; flex-shrink: 0;
+  background: #f8faff; border-right: 1.5px solid var(--border);
+  overflow-y: auto; display: flex; flex-direction: column;
+}
+
+.tab-chat-main {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+}
+
+.tab-chat-header {
+  padding: 12px 18px; background: white;
+  border-bottom: 1.5px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  font-size: 0.92rem; flex-shrink: 0;
+}
+
+.tab-chat-messages {
+  flex: 1; overflow-y: auto; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+  scroll-behavior: smooth;
+}
+.tab-chat-messages::-webkit-scrollbar { width: 5px; }
+.tab-chat-messages::-webkit-scrollbar-thumb { background: #ccc; border-radius: 5px; }
+
+.tab-chat-input-wrap {
+  padding: 10px 12px; border-top: 1.5px solid var(--border);
+  display: flex; gap: 8px; align-items: flex-end;
+  background: white; flex-shrink: 0;
+}
+
+.tab-chat-input {
+  flex: 1; padding: 9px 13px;
+  border: 2px solid var(--border); border-radius: 18px;
+  font-family: 'Nunito', sans-serif; font-size: 0.9rem;
+  resize: none; max-height: 100px; outline: none;
+  transition: border-color 0.2s; line-height: 1.4;
+}
+.tab-chat-input:focus { border-color: var(--ocean); }
+
+/* Topic item dans la sidebar */
+.tc-topic-item {
+  padding: 10px 12px; cursor: pointer; font-size: 0.78rem;
+  font-weight: 700; color: var(--text);
+  border-left: 3px solid transparent; transition: all 0.15s;
+  display: flex; flex-direction: column; gap: 2px; position: relative;
+}
+.tc-topic-item:hover { background: var(--foam); }
+.tc-topic-item.active { background: #e8f4fd; border-left-color: var(--ocean); color: var(--ocean-deep); }
+.tc-topic-unread {
+  position: absolute; top: 8px; right: 8px;
+  background: var(--coral); color: white;
+  font-size: 0.62rem; font-weight: 800; min-width: 16px; height: 16px;
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  padding: 0 3px;
+}
+.tc-topic-section {
+  padding: 8px 10px 4px; font-size: 0.62rem; font-weight: 800;
+  color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+}
+
+/* Réponse à un message */
+.msg-reply-preview {
+  background: rgba(0,0,0,0.08); border-left: 3px solid rgba(255,255,255,0.5);
+  padding: 4px 8px; border-radius: 6px; font-size: 0.75rem;
+  margin-bottom: 4px; opacity: 0.85;
+}
+.msg-bubble.mine .msg-reply-preview { border-left-color: rgba(255,255,255,0.5); }
+.msg-bubble:not(.mine) .msg-reply-preview { background: var(--foam); border-left-color: var(--ocean); }
+
+@media (max-width: 600px) {
+  .tab-chat-wrap { height: calc(100dvh - 210px); }
+  .tab-chat-sidebar { width: 80px; }
+  .tc-topic-item { font-size: 0.68rem; padding: 8px 8px; }
+  .tc-topic-section { font-size: 0.55rem; }
+}
+
 /* ── Splash restauration ── */
 #restore-splash {
   position: fixed; inset: 0; z-index: 9999;
@@ -2398,21 +2491,46 @@ header {
 
     <!-- ──────── MESSAGES ──────── -->
     <div class="tab-section" id="tab-inbox">
-      <div class="panel" id="inbox-panel">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
-          <div class="panel-title" style="margin:0;">💬 Messages</div>
-          <div style="display:flex;gap:8px;background:var(--bg);border-radius:10px;padding:4px;">
-            <button id="inbox-btn-all" class="btn btn-primary btn-sm" onclick="setInboxView('all')">🌍 Tous</button>
-            <button id="inbox-btn-mine" class="btn btn-sm" style="background:transparent;color:var(--text-muted);" onclick="setInboxView('mine')">👤 Mes messages</button>
+
+      <!-- Barre présence en ligne -->
+      <div class="tab-online-bar" id="tab-online-bar">
+        <span style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;opacity:0.7;flex-shrink:0;">En ligne :</span>
+        <div id="tab-online-users" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+        <button class="btn btn-sm" style="margin-left:auto;background:rgba(255,255,255,0.15);color:white;font-size:0.75rem;padding:4px 10px;flex-shrink:0;" onclick="openChat()">💬 Chat</button>
+      </div>
+
+      <!-- Corps chat embarqué -->
+      <div class="tab-chat-wrap">
+
+        <!-- Sidebar topics -->
+        <div class="tab-chat-sidebar" id="tab-chat-sidebar"></div>
+
+        <!-- Zone messages + réponse -->
+        <div class="tab-chat-main">
+          <div class="tab-chat-header" id="tab-chat-header">
+            <span id="tab-chat-icon">💬</span>
+            <span id="tab-chat-name" style="font-weight:800;">Général</span>
+            <span id="tab-chat-count" style="margin-left:auto;font-size:0.75rem;opacity:0.7;"></span>
+          </div>
+
+          <div class="tab-chat-messages" id="tab-chat-messages"></div>
+
+          <!-- Réponse à un message -->
+          <div id="tab-reply-bar" style="display:none;padding:8px 14px;background:#f0f9ff;border-top:2px solid var(--ocean);font-size:0.8rem;display:none;align-items:center;gap:8px;">
+            <span style="color:var(--ocean);font-weight:700;">↩ Répondre à :</span>
+            <span id="tab-reply-preview" style="flex:1;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+            <button onclick="clearReply()" style="background:none;border:none;color:var(--coral);cursor:pointer;font-size:1rem;">✕</button>
+          </div>
+
+          <div class="tab-chat-input-wrap">
+            <textarea class="tab-chat-input" id="tab-chat-input" rows="1"
+              placeholder="Écrire un message…"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();tabSendMessage();}"
+              oninput="this.style.height='';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+            <button class="chat-send-btn" onclick="tabSendMessage()">➤</button>
           </div>
         </div>
-        <!-- Barre de recherche messages -->
-        <div style="margin-bottom:16px;">
-          <input type="text" id="inbox-search" placeholder="🔍 Rechercher dans les messages…"
-            oninput="renderInbox()"
-            style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:0.9rem;font-family:'Nunito',sans-serif;box-sizing:border-box;">
-        </div>
-        <div id="inbox-content"></div>
+
       </div>
     </div>
 
@@ -3943,6 +4061,10 @@ function startPresence() {
     renderChatTopicsSidebar();
     if (chatOpen) renderChatMessages();
     updateFabBadge();
+    // Rafraîchir présence dans l'onglet Messages si actif
+    if (document.getElementById('tab-inbox')?.classList.contains('active')) {
+      renderTabOnlinebar();
+    }
   }, 3000);
 }
 
@@ -5363,18 +5485,11 @@ async function driveRestoreFromNotif() {
 // ═══════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════
-//  MESSAGES TAB — vue tous + vue personnelle
+//  ONGLET MESSAGES — CHAT EMBARQUÉ
 // ═══════════════════════════════════════════════════════
-let _inboxView = 'all'; // 'all' | 'mine'
 
-function setInboxView(v) {
-  _inboxView = v;
-  const btnAll  = document.getElementById('inbox-btn-all');
-  const btnMine = document.getElementById('inbox-btn-mine');
-  if (btnAll)  { btnAll.className  = v==='all'  ? 'btn btn-primary btn-sm' : 'btn btn-sm'; btnAll.style.cssText  = v==='all'  ? '' : 'background:transparent;color:var(--text-muted);'; }
-  if (btnMine) { btnMine.className = v==='mine' ? 'btn btn-primary btn-sm' : 'btn btn-sm'; btnMine.style.cssText = v==='mine' ? '' : 'background:transparent;color:var(--text-muted);'; }
-  renderInbox();
-}
+let _tabActiveTopic  = { id: 'general', type: 'general', name: 'Général', icon: '🌍' };
+let _tabReplyTo      = null;   // { id, text, authorName }
 
 function checkInboxTabVisibility() {
   // Toujours visible
@@ -5386,91 +5501,190 @@ function checkInboxTabVisibility() {
 
 function renderInbox() {
   if (!currentUser) return;
-  const container = document.getElementById('inbox-content');
+  renderTabOnlinebar();
+  renderTabSidebar();
+  renderTabMessages();
+}
+
+/* ── Barre présence ── */
+function renderTabOnlinebar() {
+  const container = document.getElementById('tab-online-users');
   if (!container) return;
-  const search   = (document.getElementById('inbox-search')?.value || '').toLowerCase();
-  const allMsgs  = loadMessages();
-  const topics   = getChatTopics();
+  const online = getOnlineUsers();
+  container.innerHTML = data.profiles.map(p => {
+    const isOn = online.some(o => o.id === p.id);
+    return `
+      <div style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.12);padding:3px 10px;border-radius:12px;">
+        <div style="width:8px;height:8px;border-radius:50%;background:${isOn?'#4caf50':'rgba(255,255,255,0.3)'};${isOn?'box-shadow:0 0 5px #4caf50;animation:pulse-green 2s infinite;':''}flex-shrink:0;"></div>
+        <div style="width:22px;height:22px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:800;color:white;">${p.name[0]}</div>
+        <span style="font-size:0.75rem;font-weight:700;">${p.name.split(' ')[0]}</span>
+      </div>`;
+  }).join('');
+}
 
-  // Filtrage selon le mode
-  let msgs = _inboxView === 'mine'
-    ? allMsgs.filter(m => m.authorId === currentUser.id)
-    : allMsgs;
+/* ── Sidebar topics ── */
+function renderTabSidebar() {
+  const topics    = getChatTopics();
+  const container = document.getElementById('tab-chat-sidebar');
+  if (!container) return;
+  const general   = topics.filter(t => t.type === 'general');
+  const groups    = topics.filter(t => t.type === 'group');
+  const projs     = topics.filter(t => t.type === 'project');
 
-  // Filtrage recherche
-  if (search) msgs = msgs.filter(m =>
-    m.text.toLowerCase().includes(search) ||
-    (data.profiles.find(p=>p.id===m.authorId)?.name||'').toLowerCase().includes(search)
-  );
+  function topicRow(t) {
+    const unread = getUnreadCount(t.id);
+    return `
+      <div class="tc-topic-item ${_tabActiveTopic.id === t.id ? 'active' : ''}" onclick="tabSelectTopic('${t.id}')">
+        ${t.icon} ${t.name}
+        ${unread > 0 ? `<span class="tc-topic-unread">${unread}</span>` : ''}
+      </div>`;
+  }
 
-  if (msgs.length === 0) {
+  container.innerHTML =
+    `<div class="tc-topic-section">Général</div>` + general.map(topicRow).join('') +
+    (groups.length ? `<div class="tc-topic-section">Groupes</div>` + groups.map(topicRow).join('') : '') +
+    (projs.length  ? `<div class="tc-topic-section">Projets</div>` + projs.map(topicRow).join('')  : '');
+}
+
+function tabSelectTopic(topicId) {
+  const topics = getChatTopics();
+  const topic  = topics.find(t => t.id === topicId);
+  if (!topic) return;
+  _tabActiveTopic = topic;
+  _tabReplyTo     = null;
+  document.getElementById('tab-reply-bar').style.display  = 'none';
+  document.getElementById('tab-chat-icon').textContent     = topic.icon;
+  document.getElementById('tab-chat-name').textContent     = topic.name;
+  markTopicRead(topicId);
+  renderTabSidebar();
+  renderTabMessages();
+  setTimeout(() => {
+    const m = document.getElementById('tab-chat-messages');
+    if (m) m.scrollTop = m.scrollHeight;
+  }, 50);
+}
+
+/* ── Messages ── */
+function renderTabMessages() {
+  const container = document.getElementById('tab-chat-messages');
+  if (!container) return;
+  const msgs = loadMessages()
+    .filter(m => m.topicId === _tabActiveTopic.id)
+    .sort((a, b) => a.timestamp - b.timestamp);
+
+  // Épinglés en haut
+  const pinned  = msgs.filter(m => m.highlighted);
+  const regular = msgs.filter(m => !m.highlighted);
+  const sorted  = [...pinned, ...regular.filter(m => !pinned.includes(m))];
+
+  const count = document.getElementById('tab-chat-count');
+  if (count) count.textContent = `${msgs.length} message${msgs.length > 1 ? 's' : ''}`;
+
+  if (sorted.length === 0) {
     container.innerHTML = `
-      <div class="inbox-empty">
-        <div style="font-size:3rem;margin-bottom:10px;">${_inboxView==='mine'?'📭':'💬'}</div>
-        <p style="font-size:1rem;font-weight:600;">${_inboxView==='mine'
-          ? 'Vous n\'avez pas encore envoyé de message.'
-          : 'Aucun message pour l\'instant.'}</p>
-        <button class="btn btn-primary" style="margin-top:15px;" onclick="openChat()">💬 Ouvrir la messagerie</button>
+      <div class="empty-state" style="flex:1;padding:40px 20px;">
+        <div class="icon">💬</div>
+        <p>Aucun message dans ce canal.<br>Soyez le premier !</p>
       </div>`;
     return;
   }
 
-  // Stats globales
-  const totalAll     = allMsgs.length;
-  const totalMine    = allMsgs.filter(m=>m.authorId===currentUser.id).length;
-  const totalPinned  = allMsgs.filter(m=>m.highlighted).length;
-  const activeUsers  = [...new Set(allMsgs.map(m=>m.authorId))].length;
+  const now = Date.now();
+  container.innerHTML = sorted.map(m => {
+    const author  = data.profiles.find(p => p.id === m.authorId);
+    const isMine  = m.authorId === currentUser.id;
+    const name    = author ? author.name.split(' ')[0] : '?';
+    const color   = author ? author.color : '#999';
+    const ts      = formatMsgTime(m.timestamp, now);
+    const initia  = name[0].toUpperCase();
 
-  // Regrouper par topic
-  const topicIds = [...new Set(msgs.map(m => m.topicId))];
+    // Réponse parente
+    let replyHtml = '';
+    if (m.replyTo) {
+      const parent = loadMessages().find(x => x.id === m.replyTo);
+      if (parent) {
+        const pAuthor = data.profiles.find(p => p.id === parent.authorId);
+        replyHtml = `<div class="msg-reply-preview"><strong>${pAuthor?.name.split(' ')[0] || '?'} :</strong> ${escapeHtml(parent.text).slice(0,80)}${parent.text.length>80?'…':''}</div>`;
+      }
+    }
 
-  container.innerHTML = `
-    <!-- Stats -->
-    <div class="inbox-stats" style="margin-bottom:20px;">
-      <div class="inbox-stat"><div class="inbox-stat-val">${totalAll}</div><div class="inbox-stat-lbl">Messages total</div></div>
-      <div class="inbox-stat" style="border-top-color:var(--ocean)"><div class="inbox-stat-val" style="color:var(--ocean)">${activeUsers}</div><div class="inbox-stat-lbl">Participants</div></div>
-      <div class="inbox-stat" style="border-top-color:var(--sand)"><div class="inbox-stat-val" style="color:var(--sand)">${totalPinned}</div><div class="inbox-stat-lbl">Épinglés 📌</div></div>
-      <div class="inbox-stat" style="border-top-color:var(--palm)"><div class="inbox-stat-val" style="color:var(--palm)">${totalMine}</div><div class="inbox-stat-lbl">Mes messages</div></div>
-    </div>
+    // Épinglé
+    const pinHtml = m.highlighted ? `<div class="highlight-pin" style="position:relative;top:auto;left:auto;display:inline-block;margin-bottom:4px;">📌 ${m.highlightNote || 'Important'}</div>` : '';
 
-    <!-- Messages par topic -->
-    ${topicIds.map(tid => {
-      const topic   = topics.find(t=>t.id===tid) || { name: tid, icon: '💬' };
-      const tMsgs   = msgs.filter(m=>m.topicId===tid).sort((a,b)=>a.timestamp-b.timestamp);
-      const now     = Date.now();
-      return `
-        <div class="inbox-topic-group">
-          <div class="inbox-topic-header">
-            <span>${topic.icon}</span>
-            <span>${topic.name}</span>
-            <span style="margin-left:auto;opacity:0.7;font-size:0.78rem;">${tMsgs.length} message${tMsgs.length>1?'s':''}</span>
-            <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;margin-left:8px;padding:4px 10px;"
-              onclick="openChatOnTopic('${tid}')">Ouvrir ↗</button>
+    // Actions
+    const hlBtn = m.highlighted
+      ? `<button class="msg-action-btn" title="Retirer" onclick="removeHighlight('${m.id}');renderTabMessages()">🔕</button>`
+      : `<button class="msg-action-btn" title="Épingler" onclick="openHighlightModal('${m.id}')">📌</button>`;
+    const rpBtn = `<button class="msg-action-btn" title="Répondre" onclick="tabSetReply('${m.id}')">↩</button>`;
+    const dlBtn = (isMine || currentUser.role === 'admin')
+      ? `<button class="msg-action-btn" title="Supprimer" onclick="deleteMsg('${m.id}');renderTabMessages()">🗑</button>` : '';
+
+    return `
+      <div class="msg-bubble ${isMine ? 'mine' : ''} ${m.highlighted ? 'highlighted' : ''}" id="msg-${m.id}">
+        <div class="msg-avatar" style="background:${color}">${initia}</div>
+        <div class="msg-content">
+          ${!isMine ? `<span class="msg-author" style="color:${color}">${name}</span>` : ''}
+          <div class="msg-text" style="position:relative;">
+            ${replyHtml}${pinHtml}${escapeHtml(m.text)}
           </div>
-          ${tMsgs.map(m => {
-            const author  = data.profiles.find(p=>p.id===m.authorId);
-            const isMine  = m.authorId === currentUser.id;
-            return `
-              <div class="inbox-msg-row ${m.highlighted?'highlighted-msg':''}"
-                style="border-left-color:${author?author.color:'var(--border)'}">
-                <div style="display:flex;align-items:center;gap:8px;min-width:90px;flex-shrink:0;">
-                  <div style="width:26px;height:26px;border-radius:50%;background:${author?author.color:'#ccc'};display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:800;color:white;flex-shrink:0;">${author?author.name[0].toUpperCase():'?'}</div>
-                  <span style="font-size:0.72rem;font-weight:700;color:${author?author.color:'var(--text-muted)'};">${isMine?'Vous':author?author.name.split(' ')[0]:'?'}</span>
-                </div>
-                <div class="inbox-msg-text">
-                  ${m.highlighted?`<span class="inbox-msg-pin">📌 ${m.highlightNote||'Important'}</span> `:''}
-                  ${escapeHtml(m.text)}
-                </div>
-                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
-                  <span class="inbox-msg-time">${formatMsgTime(m.timestamp, now)}</span>
-                  ${!m.highlighted?`<button class="msg-action-btn" style="font-size:0.75rem;" onclick="openHighlightModal('${m.id}');openChat()">📌</button>`:''}
-                </div>
-              </div>`;
-          }).join('')}
-        </div>`;
-    }).join('')}
-  `;
+          <span class="msg-time">${ts}</span>
+        </div>
+        <div class="msg-actions">${rpBtn}${hlBtn}${dlBtn}</div>
+      </div>`;
+  }).join('');
+
+  markTopicRead(_tabActiveTopic.id);
+  container.scrollTop = container.scrollHeight;
 }
+
+/* ── Envoyer depuis l'onglet ── */
+function tabSendMessage() {
+  const input = document.getElementById('tab-chat-input');
+  const text  = (input?.value || '').trim();
+  if (!text || !currentUser) return;
+
+  const msgs = loadMessages();
+  msgs.push({
+    id:            'm' + Date.now() + Math.random().toString(36).slice(2,6),
+    topicId:       _tabActiveTopic.id,
+    authorId:      currentUser.id,
+    text,
+    replyTo:       _tabReplyTo?.id || null,
+    timestamp:     Date.now(),
+    highlighted:   false,
+    highlightNote: ''
+  });
+  saveMessages(msgs);
+  markTopicRead(_tabActiveTopic.id);
+  clearReply();
+  if (input) { input.value = ''; input.style.height = ''; }
+  renderTabMessages();
+  renderTabSidebar();
+  updateFabBadge();
+  driveAutoBackup('msg');
+  checkInboxTabVisibility();
+}
+
+function tabSetReply(msgId) {
+  const msg    = loadMessages().find(m => m.id === msgId);
+  if (!msg) return;
+  const author = data.profiles.find(p => p.id === msg.authorId);
+  _tabReplyTo  = { id: msgId, text: msg.text, authorName: author?.name.split(' ')[0] || '?' };
+  const bar     = document.getElementById('tab-reply-bar');
+  const preview = document.getElementById('tab-reply-preview');
+  if (bar)     bar.style.display  = 'flex';
+  if (preview) preview.textContent = `${_tabReplyTo.authorName} : ${msg.text.slice(0, 60)}${msg.text.length>60?'…':''}`;
+  document.getElementById('tab-chat-input')?.focus();
+}
+
+function clearReply() {
+  _tabReplyTo = null;
+  const bar = document.getElementById('tab-reply-bar');
+  if (bar) bar.style.display = 'none';
+}
+
+// Alias pour compatibilité showTab
+function setInboxView() { renderInbox(); }
 
 // ═══════════════════════════════════════════════════════
 //  ACCESSOIRES
@@ -5974,50 +6188,96 @@ showTab = function(tabId) {
   if (_tabToBn[tabId]) setBottomNav(_tabToBn[tabId]);
 };
 
-// ─── Sync auto Drive (poll 60s) ───
-let _drivePollTimer = null;
+// ─── Sync auto Drive (poll 5s — metadata only) ───
+let _drivePollTimer    = null;
+let _driveLastModified = null;  // dernière modifiedTime connue
+
 function startDrivePoll() {
   stopDrivePoll();
-  _drivePollTimer = setInterval(async () => {
-    if (!driveAuthed || driveBackingUp) return;
-    try {
-      const rootId = await driveGetOrCreateFolder(getDriveRootName(), null);
-      const q = `name='${DRIVE_FILE_NAME}' and '${rootId}' in parents and trashed=false`;
-      const resp = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,modifiedTime)&orderBy=modifiedTime desc&pageSize=1`,
-        { headers: { Authorization: 'Bearer ' + driveAccessToken } }
-      );
-      const d = await resp.json();
-      const file = d.files?.[0];
-      if (!file) return;
-      const driveTs    = new Date(file.modifiedTime).getTime();
-      const lastRestore = parseInt(localStorage.getItem('projetPlage_lastRestoreTs') || '0');
-      if (driveTs > lastRestore + 5000) {
-        // Données Drive plus récentes → sync silencieux
-        const cr = await fetch(
-          `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
-          { headers: { Authorization: 'Bearer ' + driveAccessToken } }
-        );
-        const payload = await cr.json();
-        if (payload.data) {
-          data = payload.data;
-          localStorage.setItem('projetPlageData', JSON.stringify(data));
-          if (payload.messages) localStorage.setItem(MESSAGES_KEY, JSON.stringify(payload.messages));
-          localStorage.setItem('projetPlage_lastRestoreTs', Date.now().toString());
-          // Rafraîchir l'interface silencieusement
-          if (document.getElementById('tab-dashboard')?.classList.contains('active')) renderDashboard();
-          if (document.getElementById('tab-projects')?.classList.contains('active')) renderProjects();
-          if (document.getElementById('tab-groups')?.classList.contains('active')) renderGroups();
-          if (document.getElementById('tab-inbox')?.classList.contains('active')) renderInbox();
-          updateFabBadge();
-          showSyncIndicator('saved');
-        }
-      }
-    } catch(e) { /* silencieux */ }
-  }, 60000); // toutes les 60 secondes
+  _drivePollTimer = setInterval(drivePollTick, 5000);
 }
 function stopDrivePoll() {
   if (_drivePollTimer) { clearInterval(_drivePollTimer); _drivePollTimer = null; }
+}
+
+async function drivePollTick() {
+  if (!driveAuthed || driveBackingUp) return;
+  try {
+    const rootId = await driveGetOrCreateFolder(getDriveRootName(), null);
+    const q = `name='${DRIVE_FILE_NAME}' and '${rootId}' in parents and trashed=false`;
+    // Appel léger : seulement id + modifiedTime
+    const resp = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=1`,
+      { headers: { Authorization: 'Bearer ' + driveAccessToken } }
+    );
+    const d    = await resp.json();
+    const file = d.files?.[0];
+    if (!file) return;
+
+    const modTime = file.modifiedTime;
+
+    // Pas changé depuis le dernier poll → rien à faire
+    if (modTime === _driveLastModified) return;
+
+    const driveTs    = new Date(modTime).getTime();
+    const lastRestore = parseInt(localStorage.getItem('projetPlage_lastRestoreTs') || '0');
+
+    // Premier poll : initialiser sans télécharger
+    if (!_driveLastModified) {
+      _driveLastModified = modTime;
+      // Si Drive plus récent que local → montrer notification
+      if (driveTs > lastRestore + 3000) {
+        showDriveNewFileNotif(file, modTime);
+      }
+      return;
+    }
+
+    // Drive a changé depuis le dernier poll
+    _driveLastModified = modTime;
+
+    if (driveTs > lastRestore + 3000) {
+      // Télécharger et appliquer silencieusement
+      const cr = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
+        { headers: { Authorization: 'Bearer ' + driveAccessToken } }
+      );
+      const payload = await cr.json();
+      if (payload.data) {
+        data = payload.data;
+        localStorage.setItem('projetPlageData', JSON.stringify(data));
+        if (payload.messages) localStorage.setItem(MESSAGES_KEY, JSON.stringify(payload.messages));
+        localStorage.setItem('projetPlage_lastRestoreTs', Date.now().toString());
+        // Rafraîchir l'onglet actif
+        const activeTab = document.querySelector('.tab-section.active')?.id;
+        if (activeTab === 'tab-dashboard') renderDashboard();
+        if (activeTab === 'tab-projects')  renderProjects();
+        if (activeTab === 'tab-groups')    renderGroups();
+        if (activeTab === 'tab-inbox')     renderInbox();
+        if (activeTab === 'tab-budget')    renderBudget();
+        updateFabBadge();
+        showSyncIndicator('saved');
+        // Notification de sync
+        showDriveSyncNotif(modTime);
+      }
+    }
+  } catch(e) { /* silencieux */ }
+}
+
+function showDriveNewFileNotif(file, modTime) {
+  _pendingRestoreFileId = file.id;
+  const dateStr = new Date(modTime).toLocaleString('fr-FR', {
+    day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
+  });
+  const kb = file.size ? (parseInt(file.size)/1024).toFixed(1) + ' Ko' : '';
+  const notif = document.getElementById('drive-restore-notif');
+  const detail = document.getElementById('drive-notif-detail');
+  if (detail) detail.textContent = `Sauvegarde du ${dateStr}${kb?' · '+kb:''}`;
+  if (notif) { notif.style.display = 'flex'; }
+}
+
+function showDriveSyncNotif(modTime) {
+  const ts = new Date(modTime).toLocaleString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+  toast(`🔄 Sync Drive — données mises à jour (${ts})`, 'success');
 }
 
 // ═══════════════════════════════════════════════════════
