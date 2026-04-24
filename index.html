@@ -4990,6 +4990,7 @@ document.getElementById('pwa-install-modal').addEventListener('click', function(
 // ═══════════════════════════════════════════════════════
 
 const DEFAULT_CLIENT_ID    = '734253772338-74914ag9hfv1mk0mdpb7r6as7a8lfqh5.apps.googleusercontent.com';
+const DEFAULT_DRIVE_EMAIL  = 'CREER.ALIAND@gmail.com';  // compte Drive par défaut
 const DRIVE_CLIENT_ID_KEY  = 'projetPlage_driveClientId';
 const DRIVE_AUTO_KEY       = 'projetPlage_driveAuto';
 const DRIVE_SCOPE          = [
@@ -5069,7 +5070,7 @@ function driveTryInit() {
   driveReady = true;
 
   // Tentative silencieuse (sans popup) — se reconnecte si token encore valide
-  tokenClient.requestAccessToken({ prompt: '' });
+  tokenClient.requestAccessToken({ prompt: '', login_hint: DEFAULT_DRIVE_EMAIL });
 }
 
 function driveHandleToken(resp) {
@@ -5125,7 +5126,7 @@ function driveToggleConnect() {
   } else {
     if (!driveReady) { toast('API Google en cours de chargement…', 'error'); return; }
     // prompt:'select_account' = forcer le sélecteur de compte Google
-    tokenClient.requestAccessToken({ prompt: 'select_account' });
+    tokenClient.requestAccessToken({ prompt: 'select_account', login_hint: DEFAULT_DRIVE_EMAIL });
   }
 }
 
