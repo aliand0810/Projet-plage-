@@ -169,10 +169,14 @@ body {
 header {
   background: linear-gradient(135deg, var(--ocean-deep), var(--ocean));
   color: white;
-  padding: 0 25px;
-  height: 65px;
+  padding: 0 20px;
+  padding-top: env(safe-area-inset-top); /* Dynamic Island / notch iPhone */
+  padding-left: max(20px, env(safe-area-inset-left));
+  padding-right: max(20px, env(safe-area-inset-right));
+  height: calc(65px + env(safe-area-inset-top));
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  padding-bottom: 0;
   justify-content: space-between;
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
   position: sticky;
@@ -180,82 +184,135 @@ header {
   z-index: 100;
 }
 
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 65px;
+}
+
 .header-logo {
   font-family: 'Pacifico', cursive;
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   letter-spacing: 1px;
+  white-space: nowrap;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
 }
+
+/* Boutons texte header — cachés sur mobile */
+.header-text-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: white;
+  padding: 7px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.82rem;
+  font-family: 'Nunito', sans-serif;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.header-text-btn:hover { background: rgba(255,255,255,0.3); }
 
 .user-badge {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: rgba(255,255,255,0.15);
-  padding: 8px 15px;
+  padding: 6px 12px 6px 6px;
   border-radius: 20px;
 }
 
 .user-avatar {
-  width: 36px;
-  height: 36px;
+  width: 34px; height: 34px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 1rem;
-  color: white;
-  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 0.95rem;
+  color: white; flex-shrink: 0;
 }
 
 .user-info-text { line-height: 1.2; }
-.user-name { font-weight: 700; font-size: 0.95rem; }
-.user-code { font-size: 0.75rem; opacity: 0.8; font-weight: 600; }
-.user-role { font-size: 0.7rem; opacity: 0.7; }
+.user-name { font-weight: 700; font-size: 0.88rem; }
+.user-code { font-size: 0.7rem; opacity: 0.8; font-weight: 600; }
+.user-role { font-size: 0.65rem; opacity: 0.7; }
 
-.btn-logout {
-  background: rgba(255,255,255,0.2);
-  border: 1px solid rgba(255,255,255,0.3);
-  color: white;
-  padding: 7px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 0.85rem;
-  font-family: 'Nunito', sans-serif;
-  transition: background 0.2s;
+/* Avatar-only button (mobile) — ouvre le menu */
+.header-avatar-btn {
+  background: none; border: none; cursor: pointer;
+  padding: 0; display: none; /* visible seulement mobile */
 }
 
-.btn-logout:hover { background: rgba(255,255,255,0.35); }
+/* Dropdown menu mobile */
+.header-dropdown {
+  display: none;
+  position: fixed;
+  top: calc(65px + env(safe-area-inset-top));
+  left: 0; right: 0;
+  background: var(--ocean-deep);
+  z-index: 200;
+  padding: 12px 16px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+.header-dropdown.open { display: flex; }
+
+.hdd-user {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px; background: rgba(255,255,255,0.1);
+  border-radius: 12px; margin-bottom: 4px;
+}
+.hdd-user-info { flex:1; }
+.hdd-user-name { font-weight:800; font-size:0.95rem; }
+.hdd-user-code { font-size:0.78rem; opacity:0.75; letter-spacing:2px; }
+
+.hdd-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; background: rgba(255,255,255,0.08);
+  border-radius: 10px; border: none; color: white;
+  font-family: 'Nunito', sans-serif; font-size: 0.9rem;
+  font-weight: 700; cursor: pointer; width: 100%;
+  text-align: left; transition: background 0.15s;
+}
+.hdd-item:hover, .hdd-item:active { background: rgba(255,255,255,0.18); }
+.hdd-item.danger { color: #ff8a80; }
 
 /* TABS DE NAVIGATION */
 .nav-tabs {
   display: flex;
-  gap: 5px;
+  gap: 4px;
   background: white;
-  padding: 10px 25px;
+  padding: 8px 16px;
   border-bottom: 2px solid var(--border);
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
 }
+.nav-tabs::-webkit-scrollbar { display: none; }
 
 .nav-tab {
-  padding: 9px 18px;
+  padding: 8px 14px;
   border: none;
   background: transparent;
   cursor: pointer;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
   border-radius: 8px;
   font-family: 'Nunito', sans-serif;
   transition: all 0.2s;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .nav-tab:hover { background: var(--foam); color: var(--ocean); }
@@ -263,6 +320,83 @@ header {
 .nav-tab.admin-only { border: 1.5px dashed var(--sand); color: #a07000; }
 .nav-tab.admin-only:hover { background: #fff8e0; }
 .nav-tab.admin-only.active { background: var(--sand); color: var(--ocean-deep); border-color: var(--sand); }
+
+/* Bottom nav bar — mobile uniquement */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: white;
+  border-top: 1.5px solid var(--border);
+  padding: 6px 8px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  z-index: 200;
+  justify-content: space-around;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+}
+.bottom-nav-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: none; border: none; cursor: pointer;
+  font-family: 'Nunito', sans-serif; color: var(--text-muted);
+  font-size: 0.62rem; font-weight: 700; padding: 6px 10px;
+  border-radius: 10px; transition: all 0.15s; flex: 1;
+}
+.bottom-nav-btn .bnb-icon { font-size: 1.3rem; line-height: 1; }
+.bottom-nav-btn.active { color: var(--ocean); background: var(--foam); }
+.bottom-nav-btn.admin-tab { color: #a07000; }
+.bottom-nav-btn.admin-tab.active { color: #e65100; background: #fff3e0; }
+
+/* Sur mobile : masquer les nav-tabs du haut, afficher bottom nav */
+@media (max-width: 600px) {
+  .header-logo { font-size: 1.1rem; }
+  .header-text-btn { display: none !important; }
+  .user-badge { display: none; }
+  #pwa-header-btn { display: none !important; }
+  .header-avatar-btn { display: flex !important; }
+  .nav-tabs { display: none; }
+  .bottom-nav { display: flex; }
+  .main-content {
+    padding: 14px 12px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+  /* Drive sync indicator compact */
+  #drive-sync-indicator { font-size: 0.62rem !important; padding: 2px 5px !important; }
+}
+
+@media (min-width: 601px) and (max-width: 900px) {
+  header { padding: 0 16px; padding-top: env(safe-area-inset-top); }
+  .header-logo { font-size: 1.2rem; }
+  .user-info-text { display: none; }
+  .header-text-btn { font-size: 0.76rem; padding: 6px 10px; }
+  .main-content { padding: 16px 14px; }
+}
+
+/* Correction main-content pour ne pas déborder sous bottom nav */
+.main-content {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 25px 20px;
+}
+
+/* btn-logout → header-text-btn alias */
+.btn-logout {
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white; padding: 7px 12px; border-radius: 8px;
+  cursor: pointer; font-weight: 700; font-size: 0.82rem;
+  font-family: 'Nunito', sans-serif; transition: background 0.2s;
+  white-space: nowrap;
+}
+.btn-logout:hover { background: rgba(255,255,255,0.35); }
+
+.profile-menu-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: white; padding: 7px 12px; border-radius: 8px;
+  cursor: pointer; font-weight: 700; font-size: 0.82rem;
+  font-family: 'Nunito', sans-serif; transition: background 0.2s; white-space: nowrap;
+}
+.profile-menu-btn:hover { background: rgba(255,255,255,0.3); }
 
 /* CONTENU PRINCIPAL */
 .main-content {
@@ -1916,29 +2050,78 @@ header {
 <div id="app">
 
   <header>
-    <div class="header-logo">🌴 Projet Plage Pro</div>
-    <button id="pwa-header-btn" onclick="pwaShowModal()" title="Installer l'application"
-      style="display:none; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; padding:6px 12px; border-radius:8px; font-size:0.8rem; font-weight:700; cursor:pointer; font-family:'Nunito',sans-serif; white-space:nowrap;">
-      ⬇️ Installer
-    </button>
-    <div class="header-right" id="header-right">
-      <div class="user-badge">
-        <div class="user-avatar" id="header-avatar">?</div>
-        <div class="user-info-text">
-          <div class="user-name" id="header-name">—</div>
-          <div class="user-code" id="header-code">—</div>
-          <div class="user-role" id="header-role">—</div>
+    <div class="header-inner">
+      <div class="header-logo">🌴 Projet Plage</div>
+
+      <!-- Bouton install PWA (desktop/tablet) -->
+      <button id="pwa-header-btn" onclick="pwaShowModal()"
+        style="display:none;" class="header-text-btn">⬇️ Installer</button>
+
+      <!-- DROITE desktop/tablet -->
+      <div class="header-right" id="header-right">
+        <!-- Badge utilisateur (desktop) -->
+        <div class="user-badge">
+          <div class="user-avatar" id="header-avatar">?</div>
+          <div class="user-info-text">
+            <div class="user-name" id="header-name">—</div>
+            <div class="user-code" id="header-code">—</div>
+            <div class="user-role" id="header-role">—</div>
+          </div>
         </div>
-      </div>
-      <div id="drive-status-wrap" style="display:none;">
-        <button id="drive-btn" class="profile-menu-btn" onclick="driveToggleConnect()" title="Google Drive">
-          ☁️ Drive
+        <!-- Drive -->
+        <div id="drive-status-wrap" style="display:none; align-items:center; gap:6px;">
+          <button id="drive-btn" class="profile-menu-btn" onclick="driveToggleConnect()">☁️ Drive</button>
+        </div>
+        <button class="profile-menu-btn header-text-btn" onclick="openPasswordModal()">🔑 Code</button>
+        <button class="btn-logout header-text-btn" onclick="doLogout()">⬅ Quitter</button>
+
+        <!-- Avatar cliquable (mobile) → ouvre dropdown -->
+        <button class="header-avatar-btn" id="header-avatar-mobile-btn" onclick="toggleHeaderDropdown()">
+          <div class="user-avatar" id="header-avatar-mobile" style="width:38px;height:38px;font-size:1rem;border:2px solid rgba(255,255,255,0.5);">?</div>
         </button>
       </div>
-      <button class="profile-menu-btn" onclick="openPasswordModal()">🔑 Mon code</button>
-      <button class="btn-logout" onclick="doLogout()">⬅ Déconnexion</button>
     </div>
   </header>
+
+  <!-- DROPDOWN MENU MOBILE -->
+  <div class="header-dropdown" id="header-dropdown">
+    <div class="hdd-user">
+      <div class="user-avatar" id="hdd-avatar" style="width:42px;height:42px;font-size:1.1rem;flex-shrink:0;">?</div>
+      <div class="hdd-user-info">
+        <div class="hdd-user-name" id="hdd-name">—</div>
+        <div class="hdd-user-code" id="hdd-code">—</div>
+      </div>
+      <div id="hdd-drive-status" style="font-size:0.72rem;opacity:0.7;"></div>
+    </div>
+    <button class="hdd-item" onclick="closeHeaderDropdown();driveToggleConnect();" id="hdd-drive-btn">☁️ Drive</button>
+    <button class="hdd-item" onclick="closeHeaderDropdown();openPasswordModal();">🔑 Modifier mon code</button>
+    <button class="hdd-item" onclick="closeHeaderDropdown();pwaShowModal();">⬇️ Installer l'app</button>
+    <button class="hdd-item danger" onclick="closeHeaderDropdown();doLogout();">⬅ Déconnexion</button>
+  </div>
+  <div id="hdd-overlay" onclick="closeHeaderDropdown()"
+    style="display:none;position:fixed;inset:0;z-index:199;background:rgba(0,0,0,0.3);"></div>
+
+  <!-- BOTTOM NAV (mobile) -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="bottom-nav-btn active" id="bn-dashboard" onclick="showTab('tab-dashboard');setBottomNav('bn-dashboard')">
+      <span class="bnb-icon">🏠</span>Accueil
+    </button>
+    <button class="bottom-nav-btn" id="bn-groups" onclick="showTab('tab-groups');setBottomNav('bn-groups')">
+      <span class="bnb-icon">📁</span>Groupes
+    </button>
+    <button class="bottom-nav-btn" id="bn-projects" onclick="showTab('tab-projects');setBottomNav('bn-projects')">
+      <span class="bnb-icon">🏖</span>Projets
+    </button>
+    <button class="bottom-nav-btn" id="bn-budget" onclick="showTab('tab-budget');setBottomNav('bn-budget')">
+      <span class="bnb-icon">💰</span>Budget
+    </button>
+    <button class="bottom-nav-btn" id="bn-inbox" onclick="showTab('tab-inbox');setBottomNav('bn-inbox')" style="display:none;">
+      <span class="bnb-icon">📨</span>Messages
+    </button>
+    <button class="bottom-nav-btn admin-tab" id="bn-admin" onclick="showTab('tab-admin');setBottomNav('bn-admin')" style="display:none;">
+      <span class="bnb-icon">⚙️</span>Admin
+    </button>
+  </nav>
 
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showTab('tab-dashboard')" id="nt-dashboard">🏠 Tableau de bord</button>
@@ -2681,6 +2864,18 @@ function doLogin() {
   document.getElementById('header-name').textContent = profile.name;
   document.getElementById('header-code').textContent = '#' + profile.code;
   document.getElementById('header-role').textContent = profile.role === 'admin' ? '👑 Admin' : '👤 Membre';
+
+  // Mobile avatar + dropdown
+  const mav = document.getElementById('header-avatar-mobile');
+  if (mav) { mav.textContent = profile.name[0].toUpperCase(); mav.style.background = profile.color; }
+  const hddAv = document.getElementById('hdd-avatar');
+  if (hddAv) { hddAv.textContent = profile.name[0].toUpperCase(); hddAv.style.background = profile.color; }
+  const hddNm = document.getElementById('hdd-name'); if (hddNm) hddNm.textContent = profile.name;
+  const hddCd = document.getElementById('hdd-code'); if (hddCd) hddCd.textContent = '#' + profile.code;
+
+  // Bottom nav — admin tabs
+  const bnAdmin = document.getElementById('bn-admin');
+  if (bnAdmin) bnAdmin.style.display = profile.role === 'admin' ? 'flex' : 'none';
 
   // Onglet admin visible uniquement si admin
   const adminTab = document.getElementById('nt-admin');
@@ -4939,8 +5134,10 @@ function checkInboxTabVisibility() {
   if (!currentUser) return;
   const allMsgs = loadMessages();
   const hasMsg  = allMsgs.some(m => m.authorId === currentUser.id);
-  const tab     = document.getElementById('nt-inbox');
-  if (tab) tab.style.display = hasMsg ? 'inline-flex' : 'none';
+  const tab   = document.getElementById('nt-inbox');
+  const bnInbox = document.getElementById('bn-inbox');
+  if (tab)     tab.style.display     = hasMsg ? 'inline-flex' : 'none';
+  if (bnInbox) bnInbox.style.display = hasMsg ? 'flex'        : 'none';
 }
 
 function renderInbox() {
@@ -5326,13 +5523,47 @@ function unlinkAccessory(pid, aid, targetId) {
 // Overlay accessoires
 document.getElementById('acc-overlay').addEventListener('click', closeAccessoriesPanel);
 
+// ─── Header dropdown (mobile) ───
+function toggleHeaderDropdown() {
+  const dd  = document.getElementById('header-dropdown');
+  const ovl = document.getElementById('hdd-overlay');
+  const open = dd.classList.toggle('open');
+  ovl.style.display = open ? 'block' : 'none';
+  const hddDrive = document.getElementById('hdd-drive-btn');
+  const hddSt    = document.getElementById('hdd-drive-status');
+  if (hddSt)    hddSt.textContent    = driveAuthed ? `☁️ ${driveUserInfo?.email || 'Connecté'}` : '❌ Non connecté';
+  if (hddDrive) hddDrive.textContent = (driveAuthed ? '🔌 Déconnecter Drive' : '☁️ Connecter Drive');
+}
+function closeHeaderDropdown() {
+  document.getElementById('header-dropdown').classList.remove('open');
+  document.getElementById('hdd-overlay').style.display = 'none';
+}
+
+// ─── Bottom nav active ───
+function setBottomNav(activeId) {
+  document.querySelectorAll('.bottom-nav-btn').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById(activeId);
+  if (el) el.classList.add('active');
+}
+
+// Syncer bottom nav avec showTab (patch après déclaration)
+const _tabToBn = {
+  'tab-dashboard':'bn-dashboard','tab-groups':'bn-groups',
+  'tab-projects':'bn-projects','tab-budget':'bn-budget',
+  'tab-inbox':'bn-inbox','tab-admin':'bn-admin'
+};
+const _realShowTab = showTab;
+showTab = function(tabId) {
+  _realShowTab(tabId);
+  if (_tabToBn[tabId]) setBottomNav(_tabToBn[tabId]);
+};
+
 
 loadData();
 initLoginScreen();
 initPWA();
 loadAutoBackupSettings();
 
-// Fermer modal sur click overlay
 document.getElementById('modal-project').addEventListener('click', function(e) {
   if (e.target === this) closeModal('modal-project');
 });
