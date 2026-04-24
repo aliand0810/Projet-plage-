@@ -357,10 +357,16 @@ header {
   .bottom-nav { display: flex; }
   .main-content {
     padding: 14px 12px;
-    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    /* Espace pour barre basse + safe area + FAB */
+    padding-bottom: calc(90px + env(safe-area-inset-bottom)) !important;
   }
-  /* Drive sync indicator compact */
+  /* FAB plus proche du bas sur mobile (au-dessus bottom nav) */
+  .chat-fab { bottom: calc(75px + env(safe-area-inset-bottom)) !important; }
+  #pwa-fab  { bottom: calc(140px + env(safe-area-inset-bottom)) !important; }
   #drive-sync-indicator { font-size: 0.62rem !important; padding: 2px 5px !important; }
+  /* Modals plein écran sur mobile */
+  .modal { border-radius: 20px 20px 0 0; max-height: 92vh; margin: 0; width: 100%; max-width: 100%; }
+  .modal-overlay { align-items: flex-end; }
 }
 
 @media (min-width: 601px) and (max-width: 900px) {
@@ -1555,17 +1561,39 @@ header {
   color: white;
   border: none;
   font-size: 1.5rem;
-  cursor: pointer;
+  cursor: grab;
   box-shadow: 0 6px 20px rgba(0,119,182,0.45);
   z-index: 800;
   display: none;
   align-items: center;
   justify-content: center;
-  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s;
+  transition: box-shadow 0.2s;
   font-family: 'Nunito', sans-serif;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
-.chat-fab:hover { transform: scale(1.12); box-shadow: 0 10px 28px rgba(0,119,182,0.55); }
-.chat-fab.open-fab { transform: rotate(45deg) scale(1.05); background: linear-gradient(135deg, var(--coral), #ff8c69); }
+.chat-fab.dragging { cursor: grabbing; box-shadow: 0 16px 40px rgba(0,119,182,0.6); transform: scale(1.08); }
+.chat-fab:not(.dragging):hover { transform: scale(1.12); box-shadow: 0 10px 28px rgba(0,119,182,0.55); }
+.chat-fab.open-fab { background: linear-gradient(135deg, var(--coral), #ff8c69); }
+.chat-fab.locked { cursor: pointer; }
+
+/* Bouton verrou sur le FAB */
+.fab-lock-btn {
+  position: fixed;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  border: 1.5px solid var(--border);
+  font-size: 0.7rem;
+  display: none;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  z-index: 801;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: opacity 0.2s;
+}
+.fab-lock-btn.visible { display: flex; }
 
 .fab-badge {
   position: absolute;
@@ -2432,9 +2460,10 @@ header {
 <div class="chat-overlay" id="chat-overlay" onclick="closeChat()"></div>
 
 <!-- FAB MESSAGERIE -->
-<button class="chat-fab" id="chat-fab" onclick="toggleChat()">
+<button class="chat-fab" id="chat-fab">
   💬
 </button>
+<button class="fab-lock-btn" id="fab-lock-btn" title="Verrouiller la position">🔓</button>
 
 <!-- PANNEAU DE MESSAGERIE -->
 <div class="chat-panel" id="chat-panel">
@@ -2644,6 +2673,39 @@ header {
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- GROUP EDIT MODAL -->
+<div class="modal-overlay" id="modal-group-edit">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <div class="modal-title">✏️ Modifier le groupe</div>
+      <button class="modal-close" onclick="closeModal('modal-group-edit')">✕</button>
+    </div>
+    <input type="hidden" id="edit-group-id">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nom du groupe *</label>
+        <input type="text" id="edit-grp-name" placeholder="Ex: Hébergements...">
+      </div>
+      <div class="form-group">
+        <label>Budget max (€)</label>
+        <input type="number" id="edit-grp-budget" placeholder="5000">
+      </div>
+      <div class="form-group full">
+        <label>Image de couverture (URL)</label>
+        <input type="url" id="edit-grp-image" placeholder="https://...">
+      </div>
+      <div class="form-group full">
+        <label>Description</label>
+        <input type="text" id="edit-grp-desc" placeholder="Description du groupe...">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-primary" style="flex:1" onclick="saveEditGroup()">💾 Enregistrer</button>
+      <button class="btn" style="background:#eee;color:#333;" onclick="closeModal('modal-group-edit')">Annuler</button>
+    </div>
   </div>
 </div>
 
@@ -3276,7 +3338,8 @@ function renderGroups() {
               <button class="btn btn-danger btn-sm" onclick="setGroupStatus('${g.id}','rejected')">❌ Rejeter</button>
             ` : ''}
             <button class="btn btn-sm" style="background:#e8f4fd;color:var(--ocean);" onclick="openChatOnTopic('grp_${g.id}')">💬 Discuter</button>
-            ${isAdmin ? `<button class="btn btn-sm" style="background:#eee;color:#333;" onclick="deleteGroup('${g.id}')">🗑 Supprimer</button>` : ''}
+            <button class="btn btn-sm" style="background:var(--foam);color:var(--ocean);" onclick="openEditGroup('${g.id}')">✏️ Modifier</button>
+            ${isAdmin ? `<button class="btn btn-sm" style="background:#eee;color:#333;" onclick="deleteGroup('${g.id}')">🗑</button>` : ''}
           </div>
         </div>
       </div>
@@ -5522,6 +5585,144 @@ function unlinkAccessory(pid, aid, targetId) {
 
 // Overlay accessoires
 document.getElementById('acc-overlay').addEventListener('click', closeAccessoriesPanel);
+
+// ─── Modifier un groupe ───
+function openEditGroup(gid) {
+  const g = data.groups.find(x => x.id === gid);
+  if (!g) return;
+  document.getElementById('edit-group-id').value    = gid;
+  document.getElementById('edit-grp-name').value    = g.name  || '';
+  document.getElementById('edit-grp-budget').value  = g.budget || '';
+  document.getElementById('edit-grp-image').value   = g.image || '';
+  document.getElementById('edit-grp-desc').value    = g.desc  || '';
+  document.getElementById('modal-group-edit').classList.add('open');
+}
+
+function saveEditGroup() {
+  const gid  = document.getElementById('edit-group-id').value;
+  const name = document.getElementById('edit-grp-name').value.trim();
+  if (!name) { toast('Nom requis', 'error'); return; }
+  const g = data.groups.find(x => x.id === gid);
+  if (!g) return;
+  g.name   = name;
+  g.budget = document.getElementById('edit-grp-budget').value;
+  g.image  = document.getElementById('edit-grp-image').value.trim();
+  g.desc   = document.getElementById('edit-grp-desc').value.trim();
+  saveData();
+  closeModal('modal-group-edit');
+  renderGroups();
+  updateGroupSelects();
+  toast('Groupe modifié ✅', 'success');
+}
+
+document.getElementById('modal-group-edit').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-group-edit');
+});
+
+// ─── FAB Draggable + Lock ───
+(function() {
+  const FAB_POS_KEY = 'projetPlage_fabPos';
+  const FAB_LOCK_KEY = 'projetPlage_fabLocked';
+  const fab  = document.getElementById('chat-fab');
+  const lockBtn = document.getElementById('fab-lock-btn');
+  let isDragging = false, startX, startY, startLeft, startBottom;
+  let locked = localStorage.getItem(FAB_LOCK_KEY) === '1';
+  let dragMoved = false;
+
+  function saveFabPos() {
+    localStorage.setItem(FAB_POS_KEY, JSON.stringify({ right: fab.style.right, bottom: fab.style.bottom }));
+  }
+
+  function applyFabPos() {
+    const pos = JSON.parse(localStorage.getItem(FAB_POS_KEY) || 'null');
+    if (pos) { fab.style.right = pos.right; fab.style.bottom = pos.bottom; }
+    updateLockBtn();
+  }
+
+  function updateLockBtn() {
+    lockBtn.textContent = locked ? '🔒' : '🔓';
+    lockBtn.title = locked ? 'Déverrouiller la position' : 'Verrouiller la position';
+    fab.classList.toggle('locked', locked);
+    // Positionner le bouton verrou en haut à gauche du FAB
+    const r = parseFloat(fab.style.right  || '30');
+    const b = parseFloat(fab.style.bottom || '30');
+    lockBtn.style.right  = (r + 40) + 'px';
+    lockBtn.style.bottom = (b + 40) + 'px';
+  }
+
+  function posFromEvent(e) {
+    return e.touches ? { x: e.touches[0].clientX, y: e.touches[0].clientY }
+                     : { x: e.clientX, y: e.clientY };
+  }
+
+  function onStart(e) {
+    if (locked) { toggleChat(); return; }
+    if (e.type === 'mousedown' && e.button !== 0) return;
+    isDragging = true; dragMoved = false;
+    const pos = posFromEvent(e);
+    startX = pos.x; startY = pos.y;
+    startLeft   = window.innerWidth  - fab.getBoundingClientRect().right;
+    startBottom = window.innerHeight - fab.getBoundingClientRect().bottom;
+    fab.classList.add('dragging');
+    lockBtn.classList.add('visible');
+    e.preventDefault();
+  }
+
+  function onMove(e) {
+    if (!isDragging) return;
+    const pos = posFromEvent(e);
+    const dx = startX - pos.x;
+    const dy = startY - pos.y;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) dragMoved = true;
+    const W = window.innerWidth, H = window.innerHeight;
+    const S = 58; // taille FAB
+    let newRight  = Math.max(8, Math.min(W - S - 8, startLeft  + dx));
+    let newBottom = Math.max(8, Math.min(H - S - 8, startBottom + dy));
+    fab.style.right  = newRight  + 'px';
+    fab.style.bottom = newBottom + 'px';
+    updateLockBtn();
+    e.preventDefault();
+  }
+
+  function onEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    fab.classList.remove('dragging');
+    if (dragMoved) {
+      saveFabPos();
+    } else {
+      toggleChat();
+    }
+    updateLockBtn();
+  }
+
+  // Mouse
+  fab.addEventListener('mousedown',  onStart);
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup',   onEnd);
+  // Touch
+  fab.addEventListener('touchstart', onStart, { passive: false });
+  document.addEventListener('touchmove',  onMove, { passive: false });
+  document.addEventListener('touchend',   onEnd);
+
+  // Verrou
+  lockBtn.addEventListener('click', () => {
+    locked = !locked;
+    localStorage.setItem(FAB_LOCK_KEY, locked ? '1' : '0');
+    updateLockBtn();
+    toast(locked ? '🔒 Position verrouillée' : '🔓 Position déverrouillée', '');
+  });
+
+  // Cacher lockBtn si on clique ailleurs
+  document.addEventListener('click', e => {
+    if (e.target !== fab && e.target !== lockBtn && !isDragging) {
+      lockBtn.classList.remove('visible');
+    }
+  });
+
+  // Appliquer position sauvegardée au chargement
+  applyFabPos();
+})();
 
 // ─── Header dropdown (mobile) ───
 function toggleHeaderDropdown() {
