@@ -1748,6 +1748,10 @@ header {
 
   <header>
     <div class="header-logo">🌴 Projet Plage Pro</div>
+    <button id="pwa-header-btn" onclick="pwaShowModal()" title="Installer l'application"
+      style="display:none; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; padding:6px 12px; border-radius:8px; font-size:0.8rem; font-weight:700; cursor:pointer; font-family:'Nunito',sans-serif; white-space:nowrap;">
+      ⬇️ Installer
+    </button>
     <div class="header-right" id="header-right">
       <div class="user-badge">
         <div class="user-avatar" id="header-avatar">?</div>
@@ -1925,10 +1929,14 @@ header {
       <!-- GOOGLE DRIVE CONFIG -->
       <div class="panel">
         <div class="panel-title">☁️ Sauvegarde Google Drive</div>
-        <div style="display:flex;align-items:center;gap:15px;margin-bottom:18px;padding:14px;background:var(--foam);border-radius:12px;">
-          <div id="drive-config-status" style="flex:1;font-size:0.9rem;font-weight:700;color:var(--text-muted);">Non connecté</div>
-          <button id="drive-config-btn" class="btn btn-primary btn-sm" onclick="driveToggleConnect()">☁️ Connecter Drive</button>
-          <button class="btn btn-sm" style="background:#e8f4fd;color:var(--ocean);" onclick="driveManualBackup()">💾 Sauvegarder</button>
+
+        <!-- Compte connecté -->
+        <div id="drive-config-status" style="margin-bottom:16px;padding:14px;background:var(--foam);border-radius:12px;font-size:0.9rem;font-weight:700;color:var(--text-muted);">Non connecté</div>
+
+        <!-- Actions -->
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+          <button id="drive-config-btn" class="btn btn-primary btn-sm" onclick="driveToggleConnect()">☁️ Connecter avec Google</button>
+          <button class="btn btn-sm" style="background:#e8f4fd;color:var(--ocean);" onclick="driveManualBackup()">💾 Sauvegarder maintenant</button>
           <button class="btn btn-sm" style="background:#fff3e0;color:#e65100;" onclick="driveRestore()">📥 Restaurer</button>
         </div>
         <div class="form-group">
@@ -2216,13 +2224,65 @@ header {
   </div>
 </div>
 
-<!-- PWA INSTALL BANNER -->
-<div class="pwa-banner" id="pwa-banner">
-  <span style="font-size:1.4rem;">🌴</span>
-  <span style="flex:1;">Installer l'application sur votre écran d'accueil !</span>
-  <button class="pwa-install-btn" onclick="pwaTriggerInstall()">Installer</button>
-  <button class="pwa-dismiss" onclick="pwaDismiss()">✕</button>
+<!-- PWA INSTALL MODAL -->
+<div id="pwa-install-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:2000; align-items:flex-end; justify-content:center;">
+  <div style="background:white; border-radius:24px 24px 0 0; width:100%; max-width:520px; padding:28px 28px 40px; box-shadow:0 -10px 50px rgba(0,0,0,0.3); animation:slideUp 0.35s cubic-bezier(0.34,1.56,0.64,1);">
+
+    <div style="display:flex; align-items:center; gap:16px; margin-bottom:20px;">
+      <canvas id="pwa-icon-preview" width="64" height="64" style="border-radius:14px; box-shadow:0 4px 15px rgba(0,0,0,0.2); flex-shrink:0;"></canvas>
+      <div>
+        <div style="font-family:'Pacifico',cursive; font-size:1.35rem; color:var(--ocean-deep);">Projet Plage Pro</div>
+        <div style="font-size:0.82rem; color:var(--text-muted); font-weight:600;">Gestionnaire de projet collaboratif</div>
+      </div>
+      <button onclick="pwaCloseModal()" style="margin-left:auto; background:none; border:none; font-size:1.4rem; cursor:pointer; color:#aaa; font-family:'Nunito',sans-serif; flex-shrink:0;">✕</button>
+    </div>
+
+    <!-- iOS -->
+    <div id="pwa-ios-steps" style="display:none;">
+      <div style="font-weight:800; color:var(--ocean-deep); margin-bottom:14px; font-size:0.95rem;">📱 Installer sur iPhone / iPad</div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--foam); border-radius:12px;">
+          <span style="font-size:1.5rem; flex-shrink:0;">1️⃣</span>
+          <span style="font-size:0.88rem; font-weight:600;">Appuyez sur le bouton <strong>Partager</strong> <span style="font-size:1.1rem;">⬆️</span> en bas de Safari</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--foam); border-radius:12px;">
+          <span style="font-size:1.5rem; flex-shrink:0;">2️⃣</span>
+          <span style="font-size:0.88rem; font-weight:600;">Faites défiler et appuyez sur <strong>« Sur l'écran d'accueil »</strong> <span style="font-size:1.1rem;">➕</span></span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--foam); border-radius:12px;">
+          <span style="font-size:1.5rem; flex-shrink:0;">3️⃣</span>
+          <span style="font-size:0.88rem; font-weight:600;">Confirmez avec <strong>Ajouter</strong> — l'icône apparaît sur votre écran 🎉</span>
+        </div>
+      </div>
+      <button onclick="pwaCloseModal()" style="width:100%; margin-top:18px; padding:14px; background:linear-gradient(135deg,var(--ocean),var(--sky)); color:white; border:none; border-radius:14px; font-size:1rem; font-weight:800; cursor:pointer; font-family:'Nunito',sans-serif;">J'ai compris !</button>
+    </div>
+
+    <!-- Android / Desktop -->
+    <div id="pwa-native-steps" style="display:none;">
+      <div style="font-weight:800; color:var(--ocean-deep); margin-bottom:14px; font-size:0.95rem;" id="pwa-native-title">📲 Installer l'application</div>
+      <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:18px; font-weight:600;" id="pwa-native-desc">Ajoutez l'app sur votre écran d'accueil pour un accès instantané, même hors ligne.</p>
+      <div style="display:flex; gap:10px;">
+        <button id="pwa-install-btn" onclick="pwaTriggerInstall()" style="flex:1; padding:14px; background:linear-gradient(135deg,var(--ocean),var(--sky)); color:white; border:none; border-radius:14px; font-size:1rem; font-weight:800; cursor:pointer; font-family:'Nunito',sans-serif;">🚀 Installer maintenant</button>
+        <button onclick="pwaCloseModal()" style="padding:14px 18px; background:#f0f0f0; border:none; border-radius:14px; font-size:0.9rem; font-weight:700; cursor:pointer; font-family:'Nunito',sans-serif; color:#666;">Plus tard</button>
+      </div>
+    </div>
+
+    <!-- Déjà installée -->
+    <div id="pwa-installed-steps" style="display:none; text-align:center; padding:10px 0;">
+      <div style="font-size:3rem; margin-bottom:10px;">✅</div>
+      <div style="font-weight:800; color:var(--palm); font-size:1.1rem;">Application déjà installée !</div>
+      <div style="color:var(--text-muted); font-size:0.88rem; margin-top:6px;">Retrouvez-la sur votre écran d'accueil.</div>
+      <button onclick="pwaCloseModal()" style="margin-top:18px; padding:12px 30px; background:var(--palm); color:white; border:none; border-radius:12px; font-weight:800; cursor:pointer; font-family:'Nunito',sans-serif;">Super !</button>
+    </div>
+
+  </div>
 </div>
+
+<!-- BOUTON FLOTTANT INSTALL (visible seulement si installable) -->
+<button id="pwa-fab" onclick="pwaShowModal()" title="Installer l'application"
+  style="display:none; position:fixed; bottom:100px; right:30px; width:50px; height:50px; border-radius:50%; background:linear-gradient(135deg,var(--palm),#48c774); color:white; border:none; font-size:1.3rem; cursor:pointer; box-shadow:0 6px 20px rgba(42,157,143,0.5); z-index:700; align-items:center; justify-content:center; font-family:'Nunito',sans-serif; transition:transform 0.2s;">
+  ⬇️
+</button>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
@@ -3688,103 +3748,254 @@ function adminResetPassword() {
 }
 
 // ═══════════════════════════════════════════════════════
-//  PWA — MANIFEST + SERVICE WORKER
+//  PWA — ICÔNE + MANIFEST + INSTALL
 // ═══════════════════════════════════════════════════════
 
-const PWA_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="32" fill="#023e8a"/>
-  <text x="96" y="130" font-size="110" text-anchor="middle">🌴</text>
-</svg>`;
+let pwaPrompt = null;  // deferredPrompt Android/Desktop
 
-function initPWA() {
-  // Manifest blob
-  const manifest = {
-    name: 'Projet Plage Pro',
-    short_name: 'Projet Plage',
-    description: 'Gestionnaire de projet plage collaboratif',
-    start_url: location.pathname + location.search,
-    scope: location.pathname,
-    display: 'standalone',
-    orientation: 'portrait-primary',
-    theme_color: '#023e8a',
-    background_color: '#f0f9ff',
-    lang: 'fr',
-    icons: [
-      { src: 'data:image/svg+xml,' + encodeURIComponent(PWA_ICON_SVG), sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
-      { src: 'data:image/svg+xml,' + encodeURIComponent(PWA_ICON_SVG), sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
-    ],
-    screenshots: []
-  };
-  const mBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-  const mUrl  = URL.createObjectURL(mBlob);
-  document.getElementById('pwa-manifest-link').href = mUrl;
+/* ── Génère l'icône plage sur canvas et retourne le dataURL PNG ── */
+function generatePwaIcon(size) {
+  const c   = document.createElement('canvas');
+  c.width   = c.height = size;
+  const ctx = c.getContext('2d');
+  const s   = size;
 
-  // Apple touch icon
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 180;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#023e8a';
-  ctx.beginPath(); ctx.roundRect(0,0,180,180,28); ctx.fill();
-  ctx.font = '110px serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('🌴', 90, 130);
-  document.getElementById('apple-touch-icon-link').href = canvas.toDataURL();
+  // Fond dégradé océan
+  const bg = ctx.createLinearGradient(0, 0, 0, s);
+  bg.addColorStop(0,   '#023e8a');
+  bg.addColorStop(0.6, '#0077b6');
+  bg.addColorStop(1,   '#00b4d8');
+  ctx.fillStyle = bg;
+  const r = s * 0.18;
+  ctx.beginPath();
+  ctx.moveTo(r, 0); ctx.lineTo(s-r, 0);
+  ctx.arcTo(s, 0, s, r, r);
+  ctx.lineTo(s, s-r);
+  ctx.arcTo(s, s, s-r, s, r);
+  ctx.lineTo(r, s);
+  ctx.arcTo(0, s, 0, s-r, r);
+  ctx.lineTo(0, r);
+  ctx.arcTo(0, 0, r, 0, r);
+  ctx.closePath();
+  ctx.fill();
 
-  // Service Worker
-  const SW = `
-const CACHE = 'projet-plage-v2';
-const URLS  = [self.registration.scope];
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)));
-  self.skipWaiting();
-});
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(
-    ks.filter(k => k !== CACHE).map(k => caches.delete(k))
-  )));
-  self.clients.claim();
-});
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).then(res => {
-      const clone = res.clone();
-      caches.open(CACHE).then(c => c.put(e.request, clone));
-      return res;
-    }).catch(() => caches.match(URLS[0])))
-  );
-});
-`;
-  if ('serviceWorker' in navigator) {
-    const swBlob = new Blob([SW], { type: 'text/javascript' });
-    const swUrl  = URL.createObjectURL(swBlob);
-    navigator.serviceWorker.register(swUrl, { scope: location.pathname || '/' })
-      .then(() => console.log('SW enregistré ✅'))
-      .catch(e => console.warn('SW:', e));
+  // Soleil
+  const sunX = s * 0.72, sunY = s * 0.25, sunR = s * 0.14;
+  const sunGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR);
+  sunGrad.addColorStop(0, '#ffe066');
+  sunGrad.addColorStop(1, '#ffb703');
+  ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, Math.PI*2);
+  ctx.fillStyle = sunGrad; ctx.fill();
+
+  // Vagues
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  for (let i = 0; i < 3; i++) {
+    const y = s * (0.55 + i * 0.08);
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    for (let x = 0; x <= s; x += s/6) {
+      ctx.quadraticCurveTo(x + s/12, y - s*0.025, x + s/6, y);
+    }
+    ctx.lineTo(s, s); ctx.lineTo(0, s); ctx.closePath();
+    ctx.fill();
   }
 
-  // Prompt d'installation
-  let deferredPrompt = null;
-  window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault();
-    deferredPrompt = e;
-    if (!localStorage.getItem('pwaDismissed')) {
-      document.getElementById('pwa-banner').classList.add('show');
-    }
+  // Sable
+  const sandGrad = ctx.createLinearGradient(0, s*0.72, 0, s);
+  sandGrad.addColorStop(0, '#ffb703');
+  sandGrad.addColorStop(1, '#fb8500');
+  ctx.fillStyle = sandGrad;
+  ctx.beginPath();
+  ctx.moveTo(0, s*0.78);
+  ctx.quadraticCurveTo(s*0.5, s*0.68, s, s*0.78);
+  ctx.lineTo(s, s); ctx.lineTo(0, s); ctx.closePath();
+  ctx.fill();
+
+  // Tronc du palmier
+  ctx.strokeStyle = '#5a3e28';
+  ctx.lineWidth   = s * 0.055;
+  ctx.lineCap     = 'round';
+  ctx.beginPath();
+  ctx.moveTo(s*0.35, s*0.82);
+  ctx.bezierCurveTo(s*0.38, s*0.55, s*0.42, s*0.35, s*0.48, s*0.22);
+  ctx.stroke();
+
+  // Feuilles du palmier
+  const leaves = [
+    { ex: s*0.18, ey: s*0.10, cx1: s*0.30, cy1: s*0.12 },
+    { ex: s*0.72, ey: s*0.08, cx1: s*0.58, cy1: s*0.14 },
+    { ex: s*0.22, ey: s*0.28, cx1: s*0.32, cy1: s*0.18 },
+    { ex: s*0.68, ey: s*0.24, cx1: s*0.58, cy1: s*0.18 },
+    { ex: s*0.48, ey: s*0.04, cx1: s*0.48, cy1: s*0.10 },
+  ];
+  ctx.strokeStyle = '#2a9d8f';
+  ctx.lineWidth   = s * 0.038;
+  ctx.lineCap     = 'round';
+  leaves.forEach(l => {
+    ctx.beginPath();
+    ctx.moveTo(s*0.48, s*0.22);
+    ctx.quadraticCurveTo(l.cx1, l.cy1, l.ex, l.ey);
+    ctx.stroke();
   });
-  window._pwaPrompt = () => deferredPrompt;
+
+  // Contour feuilles plus clair
+  ctx.strokeStyle = '#48c774';
+  ctx.lineWidth   = s * 0.018;
+  leaves.forEach(l => {
+    ctx.beginPath();
+    ctx.moveTo(s*0.48, s*0.22);
+    ctx.quadraticCurveTo(l.cx1, l.cy1, l.ex, l.ey);
+    ctx.stroke();
+  });
+
+  return c.toDataURL('image/png');
+}
+
+function initPWA() {
+  // ── 1. Générer l'icône ──
+  const icon192 = generatePwaIcon(192);
+  const icon512 = generatePwaIcon(512);
+
+  // Apple touch icon
+  const atil = document.getElementById('apple-touch-icon-link');
+  if (atil) atil.href = generatePwaIcon(180);
+
+  // Miniature dans le modal
+  const preview = document.getElementById('pwa-icon-preview');
+  if (preview) {
+    const pCtx = preview.getContext('2d');
+    const img  = new Image();
+    img.onload = () => pCtx.drawImage(img, 0, 0, 64, 64);
+    img.src    = icon192;
+  }
+
+  // ── 2. Manifest ──
+  const manifest = {
+    name:             'Projet Plage Pro',
+    short_name:       'Projet Plage',
+    description:      'Gestionnaire de projet plage collaboratif',
+    start_url:        location.href,
+    scope:            location.pathname.replace(/[^/]*$/, '') || '/',
+    display:          'standalone',
+    orientation:      'any',
+    theme_color:      '#023e8a',
+    background_color: '#f0f9ff',
+    lang:             'fr',
+    categories:       ['productivity', 'utilities'],
+    icons: [
+      { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+    ]
+  };
+  const mBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+  document.getElementById('pwa-manifest-link').href = URL.createObjectURL(mBlob);
+
+  // ── 3. Service Worker (fichier sw.js externe) ──
+  if ('serviceWorker' in navigator) {
+    // Essaie d'abord sw.js dans le même répertoire
+    const swPath = location.pathname.replace(/[^/]*$/, '') + 'sw.js';
+    navigator.serviceWorker.register(swPath)
+      .then(reg => {
+        console.log('✅ SW enregistré :', reg.scope);
+        // Vérifier si déjà installée
+        window.addEventListener('appinstalled', () => {
+          pwaPrompt = null;
+          document.getElementById('pwa-fab').style.display = 'none';
+          toast('🎉 Application installée avec succès !', 'success');
+        });
+      })
+      .catch(err => {
+        console.warn('⚠️ sw.js non trouvé — mode hors-ligne désactivé. Déposez sw.js dans le même dossier.', err.message);
+      });
+  }
+
+  // ── 4. Détection plateforme + prompt install ──
+  const isIOS    = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  const isInApp  = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+  if (isInApp) return; // déjà installée
+
+  if (isIOS) {
+    // iOS : montrer le FAB avec les instructions manuelles
+    const fab = document.getElementById('pwa-fab');
+    if (fab) fab.style.display = 'flex';
+    const hbtn = document.getElementById('pwa-header-btn');
+    if (hbtn) hbtn.style.display = 'inline-flex';
+  } else {
+    // Android/Desktop : attendre l'événement beforeinstallprompt
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      pwaPrompt = e;
+      const fab = document.getElementById('pwa-fab');
+      if (fab) fab.style.display = 'flex';
+      const hbtn = document.getElementById('pwa-header-btn');
+      if (hbtn) hbtn.style.display = 'inline-flex';
+      // Auto-afficher après 3s si pas déjà vu
+      if (!localStorage.getItem('pwaModalSeen')) {
+        setTimeout(pwaShowModal, 3000);
+      }
+    });
+  }
+}
+
+/* ── Modal d'installation ── */
+function pwaShowModal() {
+  localStorage.setItem('pwaModalSeen', '1');
+  const modal   = document.getElementById('pwa-install-modal');
+  const isIOS   = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  const isInApp = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+  // Masquer tous les blocs
+  ['pwa-ios-steps','pwa-native-steps','pwa-installed-steps'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+
+  if (isInApp) {
+    document.getElementById('pwa-installed-steps').style.display = 'block';
+  } else if (isIOS) {
+    document.getElementById('pwa-ios-steps').style.display = 'block';
+  } else {
+    const isMobile = /android/i.test(navigator.userAgent);
+    document.getElementById('pwa-native-title').textContent = isMobile ? '📲 Installer sur Android' : '🖥 Installer sur l\'ordinateur';
+    document.getElementById('pwa-native-desc').textContent  = isMobile
+      ? 'Ajoutez l\'app sur votre écran d\'accueil pour un accès en un tap, même hors ligne.'
+      : 'Installez l\'app pour l\'ouvrir depuis votre bureau, même sans connexion.';
+    document.getElementById('pwa-native-steps').style.display = 'block';
+    if (!pwaPrompt) {
+      document.getElementById('pwa-install-btn').textContent = '🖥 Utiliser le bouton ⊕ dans la barre d\'adresse';
+      document.getElementById('pwa-install-btn').style.background = 'var(--palm)';
+    }
+  }
+
+  modal.style.display = 'flex';
+}
+
+function pwaCloseModal() {
+  document.getElementById('pwa-install-modal').style.display = 'none';
 }
 
 function pwaTriggerInstall() {
-  const p = window._pwaPrompt?.();
-  if (p) { p.prompt(); p.userChoice.then(() => { document.getElementById('pwa-banner').classList.remove('show'); }); }
-  else { document.getElementById('pwa-banner').classList.remove('show'); }
+  if (pwaPrompt) {
+    pwaPrompt.prompt();
+    pwaPrompt.userChoice.then(result => {
+      if (result.outcome === 'accepted') {
+        document.getElementById('pwa-fab').style.display = 'none';
+        pwaCloseModal();
+      }
+      pwaPrompt = null;
+    });
+  } else {
+    pwaCloseModal();
+    toast('Utilisez le bouton ⊕ dans la barre d\'adresse du navigateur', '');
+  }
 }
 
-function pwaDismiss() {
-  localStorage.setItem('pwaDismissed', '1');
-  document.getElementById('pwa-banner').classList.remove('show');
-}
+// Fermer en cliquant sur le fond
+document.getElementById('pwa-install-modal').addEventListener('click', function(e) {
+  if (e.target === this) pwaCloseModal();
+});
+
+
 
 // ═══════════════════════════════════════════════════════
 //  GOOGLE DRIVE
@@ -3793,16 +4004,22 @@ function pwaDismiss() {
 const DEFAULT_CLIENT_ID    = '734253772338-74914ag9hfv1mk0mdpb7r6as7a8lfqh5.apps.googleusercontent.com';
 const DRIVE_CLIENT_ID_KEY  = 'projetPlage_driveClientId';
 const DRIVE_AUTO_KEY       = 'projetPlage_driveAuto';
-const DRIVE_SCOPE          = 'https://www.googleapis.com/auth/drive.file';
-const DRIVE_ROOT_FOLDER    = '📁 Projet Plage Pro';
+const DRIVE_SCOPE          = [
+  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/userinfo.profile'
+].join(' ');
+const DRIVE_ROOT_NAME      = 'Projet Plage Pro';
 const DRIVE_MSG_FOLDER     = 'Messages';
 const DRIVE_FILE_NAME      = 'ProjetPlage_backup.json';
+const DRIVE_ACCOUNT_KEY    = 'projetPlage_driveAccount';  // {email, name, picture}
 
 let driveReady       = false;
 let driveAuthed      = false;
 let driveBackingUp   = false;
 let tokenClient      = null;
 let driveAccessToken = null;
+let driveUserInfo    = null;   // {email, name, picture}
 let gapiReady        = false;
 let gisReady         = false;
 
@@ -3838,11 +4055,13 @@ function gisLoaded() {
 }
 
 function driveTryInit() {
-  if (!gapiReady || !gisReady) return;   // attendre les deux
+  if (!gapiReady || !gisReady) return;
   const cid = getDriveClientId();
   if (!cid) return;
 
-  // Pré-remplir le champ dans admin
+  // Restaurer les infos du dernier compte connecté pour l'affichage immédiat
+  driveUserInfo = JSON.parse(localStorage.getItem(DRIVE_ACCOUNT_KEY) || 'null');
+
   const el = document.getElementById('drive-client-id');
   if (el && !el.value) el.value = cid;
 
@@ -3862,31 +4081,56 @@ function driveTryInit() {
 
 function driveHandleToken(resp) {
   if (resp.error) {
-    // prompt='' peut échouer silencieusement → pas d'alerte
-    if (resp.error !== 'access_denied') {
+    if (resp.error !== 'access_denied' && resp.error !== 'interaction_required') {
       driveAuthed = false; updateDriveUI();
     }
     return;
   }
   driveAccessToken = resp.access_token;
   driveAuthed = true;
-  updateDriveUI();
-  loadDriveLastBackup();
-  toast('☁️ Google Drive connecté automatiquement !', 'success');
+
+  // Récupérer les infos du compte Google connecté
+  fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+    headers: { Authorization: 'Bearer ' + driveAccessToken }
+  })
+  .then(r => r.json())
+  .then(info => {
+    driveUserInfo = {
+      email:   info.email   || '',
+      name:    info.name    || info.email || 'Compte Google',
+      picture: info.picture || ''
+    };
+    localStorage.setItem(DRIVE_ACCOUNT_KEY, JSON.stringify(driveUserInfo));
+    // Vider le cache de dossiers car le compte a pu changer
+    Object.keys(driveFolderCache).forEach(k => delete driveFolderCache[k]);
+    updateDriveUI();
+    loadDriveLastBackup();
+    toast(`☁️ Drive connecté : ${driveUserInfo.name} (${driveUserInfo.email})`, 'success');
+  })
+  .catch(() => {
+    driveUserInfo = JSON.parse(localStorage.getItem(DRIVE_ACCOUNT_KEY) || 'null');
+    updateDriveUI();
+    loadDriveLastBackup();
+    toast('☁️ Google Drive connecté !', 'success');
+  });
 }
 
 function driveToggleConnect() {
   if (driveAuthed) {
-    google.accounts.oauth2.revoke(driveAccessToken, () => {
-      driveAuthed = false;
-      driveAccessToken = null;
-      Object.keys(driveFolderCache).forEach(k => delete driveFolderCache[k]);
-      updateDriveUI();
-      toast('Déconnecté de Drive', '');
-    });
+    if (driveAccessToken && window.google?.accounts?.oauth2) {
+      google.accounts.oauth2.revoke(driveAccessToken, () => {});
+    }
+    driveAuthed      = false;
+    driveAccessToken = null;
+    driveUserInfo    = null;
+    localStorage.removeItem(DRIVE_ACCOUNT_KEY);
+    Object.keys(driveFolderCache).forEach(k => delete driveFolderCache[k]);
+    updateDriveUI();
+    toast('Déconnecté de Drive', '');
   } else {
     if (!driveReady) { toast('API Google en cours de chargement…', 'error'); return; }
-    tokenClient.requestAccessToken({ prompt: 'consent' });
+    // prompt:'select_account' = forcer le sélecteur de compte Google
+    tokenClient.requestAccessToken({ prompt: 'select_account' });
   }
 }
 
@@ -3894,20 +4138,73 @@ function updateDriveUI() {
   const btn  = document.getElementById('drive-btn');
   const cbtn = document.getElementById('drive-config-btn');
   const stat = document.getElementById('drive-config-status');
-  if (driveAuthed) {
-    if (btn)  { btn.textContent = '☁️ ✅';  btn.title = 'Drive connecté — cliquer pour déconnecter'; }
+
+  if (driveAuthed && driveUserInfo) {
+    /* ── Bouton header ── */
+    if (btn) {
+      btn.innerHTML = driveUserInfo.picture
+        ? `<img src="${driveUserInfo.picture}" style="width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:5px;"> ✅`
+        : '☁️ ✅';
+      btn.title = `Drive : ${driveUserInfo.email} — Cliquer pour déconnecter`;
+    }
+    /* ── Bouton admin ── */
     if (cbtn) { cbtn.textContent = '🔌 Déconnecter'; cbtn.style.background = 'var(--coral)'; }
-    if (stat) { stat.innerHTML = `✅ Connecté · <span style="letter-spacing:0;font-weight:600;color:var(--text-muted);">${getDriveClientId().slice(0,20)}…</span>`; stat.style.color = 'var(--palm)'; }
+    /* ── Statut admin ── */
+    if (stat) {
+      stat.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;">
+          ${driveUserInfo.picture ? `<img src="${driveUserInfo.picture}" style="width:34px;height:34px;border-radius:50%;border:2px solid var(--palm);">` : '<span style="font-size:1.5rem;">👤</span>'}
+          <div>
+            <div style="font-weight:800;color:var(--ocean-deep);">${driveUserInfo.name}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);">${driveUserInfo.email}</div>
+            <div style="font-size:0.72rem;color:var(--palm);font-weight:700;">✅ Drive connecté</div>
+          </div>
+          <button class="btn btn-sm" style="margin-left:auto;background:#e8f4fd;color:var(--ocean);" onclick="driveToggleConnect()">🔄 Changer de compte</button>
+        </div>`;
+      stat.style.color = '';
+    }
+  } else if (driveAuthed) {
+    if (btn)  { btn.textContent = '☁️ ✅'; btn.title = 'Drive connecté'; }
+    if (cbtn) { cbtn.textContent = '🔌 Déconnecter'; cbtn.style.background = 'var(--coral)'; }
+    if (stat) { stat.textContent = '✅ Drive connecté'; stat.style.color = 'var(--palm)'; }
   } else {
+    /* ── Compte mémorisé (affichage même hors connexion) ── */
+    const saved = JSON.parse(localStorage.getItem(DRIVE_ACCOUNT_KEY) || 'null');
     if (btn)  { btn.textContent = '☁️ Drive'; btn.title = 'Connecter Google Drive'; }
     if (cbtn) { cbtn.textContent = '☁️ Connecter Drive'; cbtn.style.background = ''; }
-    if (stat) { stat.textContent = 'Non connecté'; stat.style.color = ''; }
+    if (stat) {
+      stat.innerHTML = saved
+        ? `<div style="display:flex;align-items:center;gap:8px;color:var(--text-muted);">
+             ${saved.picture ? `<img src="${saved.picture}" style="width:28px;height:28px;border-radius:50%;opacity:0.5;">` : ''}
+             <div>
+               <div style="font-size:0.82rem;font-weight:700;">Dernier compte : ${saved.name}</div>
+               <div style="font-size:0.72rem;">${saved.email} — <em>Non connecté</em></div>
+             </div>
+           </div>`
+        : 'Non connecté';
+      stat.style.color = '';
+    }
+  }
+
+  /* ── Mettre à jour le bouton en haut du panneau admin ── */
+  const driveBtnAdmin = document.getElementById('drive-config-btn');
+  if (driveBtnAdmin && !driveAuthed) {
+    driveBtnAdmin.onclick = driveToggleConnect;
   }
 }
 
 /* ══════════════════════════════════════════
    GESTION DES DOSSIERS DRIVE
 ══════════════════════════════════════════ */
+
+/**
+ * Nom du dossier racine Drive = "Projet Plage Pro — email@gmail.com"
+ * → chaque compte Google a son propre espace isolé
+ */
+function getDriveRootName() {
+  const email = driveUserInfo?.email || JSON.parse(localStorage.getItem(DRIVE_ACCOUNT_KEY) || 'null')?.email;
+  return email ? `${DRIVE_ROOT_NAME} — ${email}` : DRIVE_ROOT_NAME;
+}
 
 /**
  * Retourne l'ID d'un dossier Drive (le crée s'il n'existe pas).
@@ -3997,17 +4294,18 @@ async function driveDoBackup() {
   if (btn) btn.textContent = '☁️ ⏳';
 
   try {
-    // ── Arborescence Drive ──
-    // 📁 Projet Plage Pro/
+    // ── Arborescence Drive PER COMPTE ──
+    // 📁 Projet Plage Pro — jean@gmail.com/
     //   ├── ProjetPlage_backup.json
     //   └── 📁 Messages/
     //       ├── 📁 Marie_Dupont/
-    //       │   └── PlageMsg_Marie_Dupont.json
-    //       └── 📁 Lucas_Martin/
-    //           └── PlageMsg_Lucas_Martin.json
+    //       │   ├── PlageMsg_Marie_Dupont.json
+    //       │   └── PlageMsg_Marie_Dupont_Importants.json
+    //       └── …
 
-    const rootId = await driveGetOrCreateFolder(DRIVE_ROOT_FOLDER, null);
-    const msgsId = await driveGetOrCreateFolder(DRIVE_MSG_FOLDER, rootId);
+    const rootName = getDriveRootName();
+    const rootId   = await driveGetOrCreateFolder(rootName, null);
+    const msgsId   = await driveGetOrCreateFolder(DRIVE_MSG_FOLDER, rootId);
 
     // 1. Sauvegarde globale dans le dossier racine
     const payload = { timestamp: Date.now(), data, version: '2.0', exportedAt: new Date().toISOString() };
@@ -4048,10 +4346,11 @@ async function driveDoBackup() {
 
     const now = new Date().toLocaleString('fr-FR');
     localStorage.setItem('projetPlage_lastBackup', now);
+    const account = driveUserInfo?.email || '';
     const lbl = document.getElementById('drive-last-backup');
-    if (lbl) lbl.innerHTML = `✅ Dernière sauvegarde : <strong>${now}</strong> · ${userIds.length} dossier(s) membre(s)`;
+    if (lbl) lbl.innerHTML = `✅ <strong>${now}</strong> · ${userIds.length} membre(s) · <span style="color:var(--ocean)">${account}</span>`;
     if (btn) { btn.textContent = '☁️ ✅'; setTimeout(() => updateDriveUI(), 3000); }
-    toast('☁️ Sauvegarde Drive complète !', 'success');
+    toast(`☁️ Sauvegarde Drive : ${account || 'OK'} !`, 'success');
 
   } catch(e) {
     console.error('Drive backup:', e);
@@ -4096,9 +4395,10 @@ async function driveRestore() {
   if (!driveAuthed) { toast('Connectez Google Drive d\'abord', 'error'); return; }
   if (!confirm('⚠️ Restaurer depuis Google Drive ?\nLes données locales seront remplacées.')) return;
   try {
-    // Chercher le fichier de backup dans le dossier racine
-    const rootId = await driveGetOrCreateFolder(DRIVE_ROOT_FOLDER, null);
-    const q      = `name='${DRIVE_FILE_NAME}' and '${rootId}' in parents and trashed=false`;
+    // Chercher le fichier de backup dans le dossier du compte actuel
+    const rootName = getDriveRootName();
+    const rootId   = await driveGetOrCreateFolder(rootName, null);
+    const q        = `name='${DRIVE_FILE_NAME}' and '${rootId}' in parents and trashed=false`;
     const searchResp = await fetch(
       `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,modifiedTime)&orderBy=modifiedTime desc`,
       { headers: { Authorization: 'Bearer ' + driveAccessToken } }
