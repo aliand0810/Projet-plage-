@@ -2277,7 +2277,54 @@ header {
   border: 2px solid rgba(255,255,255,0.25);
 }
 
-/* ── Budget objectif accessoires ── */
+/* ═══════════════════════════════════════
+   BUDGET PRO
+════════════════════════════════════════ */
+.budget-poste {
+  background: white; border-radius: 12px; padding: 14px;
+  border: 2px solid var(--border); display: flex; flex-direction: column; gap: 8px;
+}
+.budget-poste-header { display: flex; align-items: center; gap: 8px; }
+.budget-poste-icon  { font-size: 1.3rem; }
+.budget-poste-label { font-weight: 800; font-size: 0.88rem; color: var(--ocean-deep); flex:1; }
+.budget-poste-pct   { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
+.budget-poste input {
+  width: 100%; padding: 8px 12px; border: 2px solid var(--border);
+  border-radius: 8px; font-family: 'Nunito',sans-serif; font-size: 0.95rem; font-weight: 700;
+}
+.budget-poste input:focus { outline: none; border-color: var(--ocean); }
+.budget-poste-bar  { height: 6px; border-radius: 6px; background: #e0e0e0; overflow: hidden; }
+.budget-poste-fill { height: 100%; border-radius: 6px; transition: width 0.5s; }
+
+.acc-sel-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; background: white; border-radius: 10px;
+  border: 2px solid var(--border); margin-bottom: 8px;
+  cursor: pointer; transition: border-color 0.2s, background 0.2s;
+}
+.acc-sel-card:hover   { border-color: var(--sky); background: var(--foam); }
+.acc-sel-card.selected   { border-color: var(--ocean); background: #e8f4fd; }
+.acc-sel-card.over-budget { border-color: var(--coral); background: #fce4ec; }
+.acc-sel-cb   { flex-shrink:0; width:20px; height:20px; accent-color:var(--ocean); cursor:pointer; }
+.acc-sel-info { flex:1; min-width:0; }
+.acc-sel-name  { font-weight:800; font-size:0.88rem; color:var(--text); }
+.acc-sel-proj  { font-size:0.72rem; color:var(--text-muted); font-weight:600; }
+.acc-sel-price { font-weight:800; color:var(--coral); font-size:0.95rem; flex-shrink:0; }
+
+.contrib-card {
+  background: white; border-radius: 12px; padding: 14px;
+  border: 2px solid var(--border); display: flex; flex-direction: column; gap: 8px;
+}
+.contrib-card-header { display: flex; align-items: center; gap: 10px; }
+.contrib-card input {
+  width: 100%; padding: 8px 12px; border: 2px solid var(--border);
+  border-radius: 8px; font-family: 'Nunito',sans-serif; font-size: 0.95rem; font-weight: 700;
+}
+.contrib-card input:focus { outline: none; border-color: var(--ocean); }
+
+/* ═══════════════════════════════════════
+   BUDGET OBJECTIF ACCESSOIRES
+════════════════════════════════════════ */
 .acc-goal-gauge {
   background: var(--bg); border-radius: 14px; padding: 16px 18px;
 }
@@ -2585,16 +2632,51 @@ header {
       </div>
     </div>
 
-    <!-- ──────── BUDGET ──────── -->
+    <!-- ──────── BUDGET PRO ──────── -->
     <div class="tab-section" id="tab-budget">
-      <div class="panel">
-        <div class="panel-title">💰 Analyse budgétaire</div>
 
-        <div class="filters-bar" style="box-shadow:none; background:var(--bg); padding:12px; border-radius:10px; margin-bottom:20px;">
+      <!-- ① ENVELOPPE GLOBALE -->
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel-title">💰 Enveloppe budgétaire globale</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px;">
           <div class="form-group">
             <label>Budget total disponible (€)</label>
-            <input type="number" id="budget-total-input" placeholder="10000" oninput="renderBudget()">
+            <input type="number" id="budget-total-input" placeholder="10 000" oninput="saveBudgetPro();renderBudget()" style="font-size:1.1rem;font-weight:800;">
           </div>
+          <div class="form-group">
+            <label>Déjà dépensé / versé (€)</label>
+            <input type="number" id="budget-spent-input" placeholder="0" oninput="saveBudgetPro();renderBudget()" style="font-size:1.1rem;font-weight:800;">
+          </div>
+          <div class="form-group">
+            <label>Nombre de participants</label>
+            <input type="number" id="budget-members-input" placeholder="4" min="1" oninput="saveBudgetPro();renderBudget()" style="font-size:1.1rem;font-weight:800;">
+          </div>
+        </div>
+        <div id="budget-global-gauge"></div>
+      </div>
+
+      <!-- ② RÉPARTITION PAR POSTE -->
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel-title">📊 Répartition par poste de dépense</div>
+        <div id="budget-allocation-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px;"></div>
+        <div style="text-align:right;">
+          <button class="btn btn-sm" style="background:var(--foam);color:var(--ocean);" onclick="resetBudgetAlloc()">↺ Réinitialiser</button>
+        </div>
+        <div id="budget-alloc-gauge" style="margin-top:14px;"></div>
+      </div>
+
+      <!-- ③ SÉLECTEUR D'ACCESSOIRES À FINANCER -->
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel-title">🎒 Sélectionner les accessoires à financer</div>
+        <p style="font-size:0.83rem;color:var(--text-muted);margin-bottom:14px;">Cochez les accessoires que vous souhaitez inclure dans votre budget. Le total se met à jour en temps réel.</p>
+        <div id="budget-acc-selector"></div>
+        <div id="budget-acc-total" style="margin-top:14px;padding:12px 16px;background:var(--foam);border-radius:10px;display:none;"></div>
+      </div>
+
+      <!-- ④ TABLEAU PROJETS (analyse existante) -->
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel-title">🏖 Analyse projets & groupes</div>
+        <div class="filters-bar" style="box-shadow:none;background:var(--bg);padding:12px;border-radius:10px;margin-bottom:16px;">
           <div class="form-group">
             <label>Filtrer par groupe</label>
             <select id="budget-filter-group" onchange="renderBudget()">
@@ -2610,25 +2692,22 @@ header {
             </select>
           </div>
         </div>
-
-        <div id="budget-gauge" style="margin-bottom:20px; display:none;"></div>
-
         <div style="overflow-x:auto;">
-          <table class="budget-table" id="budget-table">
-            <thead>
-              <tr>
-                <th>Projet</th>
-                <th>Groupe</th>
-                <th>Prix (€)</th>
-                <th>Note</th>
-                <th>Équipements</th>
-                <th>Statut</th>
-              </tr>
-            </thead>
+          <table class="budget-table">
+            <thead><tr><th>Projet</th><th>Groupe</th><th>Prix (€)</th><th>Note</th><th>Équipements</th><th>Statut</th></tr></thead>
             <tbody id="budget-tbody"></tbody>
           </table>
         </div>
       </div>
+
+      <!-- ⑤ CONTRIBUTIONS PAR MEMBRE -->
+      <div class="panel">
+        <div class="panel-title">👥 Contributions par membre</div>
+        <p style="font-size:0.83rem;color:var(--text-muted);margin-bottom:14px;">Saisissez le montant que chaque participant peut apporter.</p>
+        <div id="budget-contributions" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px;"></div>
+        <div id="budget-contrib-summary" style="display:none;padding:14px;background:var(--foam);border-radius:12px;"></div>
+      </div>
+
     </div>
 
     <!-- ──────── MESSAGES ──────── -->
@@ -7173,7 +7252,310 @@ voteAccessory = function(pid, aid) {
   if (document.getElementById('tab-accessories')?.classList.contains('active')) renderAccessoriesTab();
 };
 
-// ── Formulaire ajout rapide depuis l'onglet Accessoires ──
+// ═══════════════════════════════════════════════════════
+//  BUDGET PRO
+// ═══════════════════════════════════════════════════════
+
+const BUDGET_PRO_KEY = 'projetPlage_budgetPro';
+const BUDGET_POSTES  = [
+  { id:'hebergement', icon:'🏠', label:'Hébergement',   color:'#0077b6', pct:40 },
+  { id:'transport',   icon:'🚗', label:'Transport',     color:'#2a9d8f', pct:20 },
+  { id:'repas',       icon:'🍽',  label:'Repas / Resto', color:'#e76f51', pct:15 },
+  { id:'activites',   icon:'🏄', label:'Activités',     color:'#9c27b0', pct:10 },
+  { id:'accessoires', icon:'🎒', label:'Accessoires',   color:'#ffb703', pct:10 },
+  { id:'imprevu',     icon:'🛡', label:'Imprévus',      color:'#888',    pct: 5 },
+];
+const ACC_SELECTED_KEY = 'projetPlage_accSelected'; // Set des IDs sélectionnés
+const CONTRIB_KEY      = 'projetPlage_contributions'; // {userId: montant}
+
+let _accSelected = new Set();
+
+function saveBudgetPro() {
+  const total   = parseFloat(document.getElementById('budget-total-input')?.value)   || 0;
+  const spent   = parseFloat(document.getElementById('budget-spent-input')?.value)   || 0;
+  const members = parseInt(document.getElementById('budget-members-input')?.value)   || 0;
+  const alloc   = {};
+  BUDGET_POSTES.forEach(p => {
+    alloc[p.id] = parseFloat(document.getElementById('bp-' + p.id)?.value) || 0;
+  });
+  localStorage.setItem(BUDGET_PRO_KEY, JSON.stringify({ total, spent, members, alloc }));
+}
+
+function loadBudgetPro() {
+  try {
+    const s = JSON.parse(localStorage.getItem(BUDGET_PRO_KEY) || '{}');
+    const set_val = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
+    set_val('budget-total-input',   s.total);
+    set_val('budget-spent-input',   s.spent);
+    set_val('budget-members-input', s.members);
+    if (s.alloc) BUDGET_POSTES.forEach(p => set_val('bp-' + p.id, s.alloc[p.id]));
+    _accSelected = new Set(JSON.parse(localStorage.getItem(ACC_SELECTED_KEY) || '[]'));
+  } catch(e) {}
+}
+
+function saveAccSelected() {
+  localStorage.setItem(ACC_SELECTED_KEY, JSON.stringify([..._accSelected]));
+}
+
+function resetBudgetAlloc() {
+  const total = parseFloat(document.getElementById('budget-total-input')?.value) || 0;
+  BUDGET_POSTES.forEach(p => {
+    const el = document.getElementById('bp-' + p.id);
+    if (el) el.value = total > 0 ? Math.round(total * p.pct / 100) : '';
+  });
+  saveBudgetPro();
+  renderBudgetPro();
+}
+
+/* ── ① Enveloppe globale ── */
+function renderBudgetGlobalGauge() {
+  const s     = JSON.parse(localStorage.getItem(BUDGET_PRO_KEY) || '{}');
+  const total = s.total || 0;
+  const spent = s.spent || 0;
+  const members = s.members || 1;
+  const el    = document.getElementById('budget-global-gauge');
+  if (!el) return;
+
+  // Coût total des projets + accessoires sélectionnés
+  const projCost = data.projects.reduce((sum, p) => sum + (parseFloat(p.price)||0), 0);
+  const allAcc   = getAllAccUnique();
+  const accCost  = allAcc.filter(a => _accSelected.has(a._uid)).reduce((s, a) => s + (parseFloat(a.price)||0), 0);
+  const totalCost = projCost + accCost;
+  const remaining = total - spent;
+  const pctSpent  = total > 0 ? Math.min(100, (spent / total) * 100) : 0;
+  const pctCost   = total > 0 ? Math.min(100, (totalCost / total) * 100) : 0;
+  const color     = pctSpent >= 100 ? 'var(--coral)' : pctSpent >= 80 ? 'var(--sand)' : 'var(--palm)';
+  const parPers   = members > 1 ? `${Math.round(remaining / members).toLocaleString('fr-FR')} €/pers.` : '';
+
+  el.innerHTML = total === 0 ? '' : `
+    <div style="background:var(--bg);border-radius:12px;padding:14px 16px;">
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;font-weight:700;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+        <span>Budget : <strong style="color:var(--ocean-deep)">${total.toLocaleString('fr-FR')} €</strong></span>
+        <span style="color:${remaining<0?'var(--coral)':'var(--palm)'};">Disponible : <strong>${remaining.toLocaleString('fr-FR')} €${parPers?' · '+parPers:''}</strong></span>
+      </div>
+      <div style="background:#e0e0e0;border-radius:10px;height:16px;overflow:hidden;position:relative;margin-bottom:6px;">
+        <div style="background:${color};width:${pctSpent}%;height:100%;border-radius:10px;transition:width 0.5s;"></div>
+        <div style="position:absolute;top:0;left:${pctCost}%;width:2px;height:100%;background:var(--ocean);opacity:0.7;" title="Coût estimé projets+accessoires"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text-muted);">
+        <span>Dépensé : ${spent.toLocaleString('fr-FR')} € (${Math.round(pctSpent)}%)</span>
+        <span>Coût estimé : ${totalCost.toLocaleString('fr-FR')} € (${Math.round(pctCost)}%)</span>
+      </div>
+    </div>`;
+}
+
+/* ── ② Répartition par poste ── */
+function renderBudgetAllocation() {
+  const container = document.getElementById('budget-allocation-grid');
+  if (!container) return;
+
+  const colors = BUDGET_POSTES.map(p=>p.color);
+  container.innerHTML = BUDGET_POSTES.map(p => `
+    <div class="budget-poste">
+      <div class="budget-poste-header">
+        <span class="budget-poste-icon">${p.icon}</span>
+        <span class="budget-poste-label">${p.label}</span>
+        <span class="budget-poste-pct" id="bp-pct-${p.id}">${p.pct}%</span>
+      </div>
+      <input type="number" id="bp-${p.id}" placeholder="${p.pct}% du budget"
+        oninput="saveBudgetPro();renderBudgetAllocGauge()">
+      <div class="budget-poste-bar">
+        <div class="budget-poste-fill" id="bp-bar-${p.id}" style="background:${p.color};width:${p.pct}%;"></div>
+      </div>
+    </div>`).join('');
+
+  // Remplir avec les valeurs sauvegardées
+  const s = JSON.parse(localStorage.getItem(BUDGET_PRO_KEY) || '{}');
+  if (s.alloc) BUDGET_POSTES.forEach(p => {
+    const el = document.getElementById('bp-' + p.id);
+    if (el && s.alloc[p.id]) el.value = s.alloc[p.id];
+  });
+  renderBudgetAllocGauge();
+}
+
+function renderBudgetAllocGauge() {
+  const total = parseFloat(document.getElementById('budget-total-input')?.value) || 0;
+  const values = BUDGET_POSTES.map(p => ({ ...p, v: parseFloat(document.getElementById('bp-'+p.id)?.value)||0 }));
+  const allocTotal = values.reduce((s, p) => s + p.v, 0);
+
+  values.forEach(p => {
+    const pct = total > 0 ? Math.min(100, (p.v / total) * 100) : (allocTotal>0 ? (p.v/allocTotal*100) : p.pct);
+    const bar = document.getElementById('bp-bar-' + p.id);
+    const lbl = document.getElementById('bp-pct-' + p.id);
+    if (bar) bar.style.width = pct + '%';
+    if (lbl) lbl.textContent = total > 0 ? Math.round(pct) + '%' : '';
+  });
+
+  const gauge = document.getElementById('budget-alloc-gauge');
+  if (!gauge) return;
+  const diff = total - allocTotal;
+  if (total === 0) { gauge.innerHTML = ''; return; }
+  const pct  = Math.min(100, (allocTotal / total) * 100);
+  const segs = values.map(p => `<div style="flex:${p.v};background:${p.color};height:100%;transition:flex 0.4s;" title="${p.label}: ${p.v.toLocaleString('fr-FR')} €"></div>`).join('');
+  gauge.innerHTML = `
+    <div style="height:14px;border-radius:8px;overflow:hidden;display:flex;margin-bottom:6px;background:#e0e0e0;">${segs}</div>
+    <div style="font-size:0.75rem;font-weight:700;color:${Math.abs(diff)<1?'var(--palm)':diff<0?'var(--coral)':'var(--text-muted)'};">
+      ${Math.abs(diff)<1 ? '✅ Budget parfaitement réparti'
+        : diff>0 ? `⚠️ ${diff.toLocaleString('fr-FR')} € non alloués`
+        : `❌ Dépassement de ${Math.abs(diff).toLocaleString('fr-FR')} €`}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+      ${values.filter(p=>p.v>0).map(p=>`<span style="font-size:0.72rem;font-weight:700;background:${p.color}20;color:${p.color};padding:2px 8px;border-radius:8px;border:1px solid ${p.color}40;">${p.icon} ${p.label} : ${p.v.toLocaleString('fr-FR')} €</span>`).join('')}
+    </div>`;
+}
+
+/* ── ③ Sélecteur accessoires ── */
+function getAllAccUnique() {
+  const all = [];
+  data.projects.forEach(p => {
+    (p.accessories||[]).forEach(a => {
+      if (!all.find(x => x._uid === p.id + a.id)) {
+        all.push({ ...a, _projId: p.id, _projTitle: p.title, _uid: p.id + a.id });
+      }
+    });
+  });
+  return all;
+}
+
+function renderBudgetAccSelector() {
+  const container = document.getElementById('budget-acc-selector');
+  const totalEl   = document.getElementById('budget-acc-total');
+  if (!container) return;
+
+  const all     = getAllAccUnique();
+  const budgetTotal = parseFloat(document.getElementById('budget-total-input')?.value) || 0;
+  const spent   = parseFloat(document.getElementById('budget-spent-input')?.value)   || 0;
+  const allocAcc = parseFloat(document.getElementById('bp-accessoires')?.value) || 0;
+  const enveloppe = allocAcc || (budgetTotal - spent);
+
+  if (all.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">🎒</div><p>Aucun accessoire ajouté.</p></div>';
+    totalEl.style.display = 'none';
+    return;
+  }
+
+  // Calcul du total sélectionné
+  const selectedAcc = all.filter(a => _accSelected.has(a._uid));
+  const selectedCost = selectedAcc.reduce((s, a) => s + (parseFloat(a.price)||0), 0);
+  const remaining = enveloppe - selectedCost;
+
+  container.innerHTML = all.map(a => {
+    const price    = parseFloat(a.price) || 0;
+    const isSelected = _accSelected.has(a._uid);
+    const wouldExceed = !isSelected && enveloppe > 0 && (selectedCost + price) > enveloppe;
+    return `
+      <div class="acc-sel-card ${isSelected?'selected':''} ${wouldExceed?'over-budget':''}"
+        onclick="toggleAccSelection('${a._uid}')">
+        <input type="checkbox" class="acc-sel-cb" ${isSelected?'checked':''} onclick="event.stopPropagation();toggleAccSelection('${a._uid}')">
+        ${a.image
+          ? `<img src="${a.image}" class="acc-sel-img" onerror="this.style.display='none'" style="width:44px;height:44px;border-radius:8px;object-fit:cover;">`
+          : `<div class="acc-sel-img" style="width:44px;height:44px;border-radius:8px;background:var(--foam);display:flex;align-items:center;justify-content:center;font-size:1.3rem;">🎒</div>`}
+        <div class="acc-sel-info">
+          <div class="acc-sel-name">${a.name}${a.validated?' ✅':''}</div>
+          <div class="acc-sel-proj">📌 ${a._projTitle}</div>
+          ${wouldExceed?`<div style="font-size:0.7rem;color:var(--coral);font-weight:700;">⚠️ Dépasserait l'enveloppe de ${(selectedCost+price-enveloppe).toLocaleString('fr-FR')} €</div>`:''}
+        </div>
+        <div class="acc-sel-price">${price>0?price.toLocaleString('fr-FR')+' €':'—'}</div>
+      </div>`;
+  }).join('');
+
+  // Résumé
+  if (selectedAcc.length > 0) {
+    totalEl.style.display = 'block';
+    const color = remaining >= 0 ? 'var(--palm)' : 'var(--coral)';
+    totalEl.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div>
+          <span style="font-weight:800;font-size:1rem;color:var(--ocean-deep);">${selectedAcc.length} accessoire(s) sélectionné(s)</span>
+          <span style="margin-left:10px;color:var(--coral);font-weight:800;font-size:1rem;">${selectedCost.toLocaleString('fr-FR')} €</span>
+        </div>
+        ${enveloppe>0?`<div style="font-weight:700;font-size:0.88rem;color:${color};">${remaining>=0?'Reste dans l\'enveloppe : <strong>'+remaining.toLocaleString('fr-FR')+' €</strong>':'Dépassement : <strong>'+Math.abs(remaining).toLocaleString('fr-FR')+' €</strong>'}</div>`:''}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+        ${selectedAcc.map(a=>`<span style="font-size:0.75rem;background:#e8f4fd;color:var(--ocean);padding:2px 8px;border-radius:8px;font-weight:700;">${a.name} ${a.price?'— '+parseFloat(a.price).toLocaleString('fr-FR')+' €':''}</span>`).join('')}
+      </div>`;
+  } else {
+    totalEl.style.display = 'none';
+  }
+}
+
+function toggleAccSelection(uid) {
+  if (_accSelected.has(uid)) { _accSelected.delete(uid); } else { _accSelected.add(uid); }
+  saveAccSelected();
+  renderBudgetAccSelector();
+  renderBudgetGlobalGauge();
+}
+
+/* ── ⑤ Contributions par membre ── */
+function renderBudgetContributions() {
+  const container = document.getElementById('budget-contributions');
+  if (!container) return;
+  const contribs = JSON.parse(localStorage.getItem(CONTRIB_KEY) || '{}');
+
+  container.innerHTML = data.profiles.map(p => {
+    const val = contribs[p.id] || '';
+    return `
+      <div class="contrib-card">
+        <div class="contrib-card-header">
+          <div style="width:32px;height:32px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-weight:800;color:white;font-size:0.85rem;flex-shrink:0;">${p.name[0]}</div>
+          <div style="font-weight:800;font-size:0.9rem;color:var(--ocean-deep);">${p.name}</div>
+        </div>
+        <input type="number" placeholder="Montant (€)" value="${val}"
+          oninput="saveContrib('${p.id}',this.value);renderContribSummary()">
+      </div>`;
+  }).join('');
+
+  renderContribSummary();
+}
+
+function saveContrib(uid, val) {
+  const c = JSON.parse(localStorage.getItem(CONTRIB_KEY) || '{}');
+  c[uid] = parseFloat(val) || 0;
+  localStorage.setItem(CONTRIB_KEY, JSON.stringify(c));
+}
+
+function renderContribSummary() {
+  const c         = JSON.parse(localStorage.getItem(CONTRIB_KEY) || '{}');
+  const totalC    = Object.values(c).reduce((s, v) => s + v, 0);
+  const budgetT   = parseFloat(document.getElementById('budget-total-input')?.value) || 0;
+  const el        = document.getElementById('budget-contrib-summary');
+  if (!el) return;
+
+  if (totalC === 0) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  const diff  = budgetT - totalC;
+  const color = diff >= 0 ? 'var(--palm)' : 'var(--coral)';
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+      <div>
+        <span style="font-weight:800;font-size:1rem;">Total collecté :</span>
+        <span style="color:var(--palm);font-weight:800;font-size:1.1rem;margin-left:8px;">${totalC.toLocaleString('fr-FR')} €</span>
+      </div>
+      ${budgetT>0?`<span style="color:${color};font-weight:700;">${diff>=0?'Manque encore '+diff.toLocaleString('fr-FR')+' €':'Surplus de '+Math.abs(diff).toLocaleString('fr-FR')+' €'}</span>`:''}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      ${Object.entries(c).filter(([,v])=>v>0).map(([uid,v])=>{
+        const pr=data.profiles.find(x=>x.id===uid);
+        return pr?`<span style="font-size:0.78rem;background:${pr.color}20;color:${pr.color};padding:3px 10px;border-radius:8px;font-weight:700;border:1px solid ${pr.color}40;">${pr.name.split(' ')[0]} : ${v.toLocaleString('fr-FR')} €</span>`:'';
+      }).join('')}
+    </div>`;
+}
+
+/* ── Master render ── */
+function renderBudgetPro() {
+  loadBudgetPro();
+  renderBudgetAllocation();
+  renderBudgetGlobalGauge();
+  renderBudgetAccSelector();
+  renderBudgetContributions();
+}
+
+// Hook dans renderBudget existant
+const _origRenderBudget = renderBudget;
+renderBudget = function() {
+  _origRenderBudget();
+  renderBudgetPro();
+};
 function toggleAccTabForm() {
   const fields = document.getElementById('acc-tab-form-fields');
   const arrow  = document.getElementById('acc-tab-form-arrow');
