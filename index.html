@@ -2277,7 +2277,41 @@ header {
   border: 2px solid rgba(255,255,255,0.25);
 }
 
-/* ── Activité récente ── */
+/* ── Budget objectif accessoires ── */
+.acc-goal-gauge {
+  background: var(--bg); border-radius: 14px; padding: 16px 18px;
+}
+.acc-goal-row {
+  display: flex; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 10px; font-size: 0.88rem;
+}
+.acc-goal-track {
+  height: 18px; background: #e0e0e0; border-radius: 12px;
+  overflow: hidden; margin-bottom: 12px; position: relative;
+}
+.acc-goal-fill-collected {
+  position: absolute; left:0; top:0; bottom:0;
+  border-radius: 12px;
+  transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1);
+}
+.acc-goal-fill-needed {
+  position: absolute; top:0; bottom:0;
+  border-radius: 12px; opacity: 0.35;
+  transition: width 0.6s, left 0.6s;
+}
+.acc-goal-cards {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+.acc-goal-card {
+  padding: 12px 14px; border-radius: 12px;
+  text-align: center; border: 2px solid transparent;
+}
+.acc-goal-card .agc-val { font-size: 1.4rem; font-weight: 800; line-height: 1; margin-bottom: 3px; }
+.acc-goal-card .agc-lbl { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); }
+
+/* ── Budget objectif accessoires ── */
 .activity-item {
   display: flex; align-items: center; gap: 12px;
   padding: 10px 14px; background: white; border-radius: 10px;
@@ -2644,6 +2678,72 @@ header {
 
     <!-- ──────── ACCESSOIRES ──────── -->
     <div class="tab-section" id="tab-accessories">
+
+      <!-- Panel budget objectif -->
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel-title" style="margin-bottom:16px;">🎯 Budget commande — suivi de financement</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px;">
+          <div class="form-group">
+            <label>Budget objectif total (€)</label>
+            <input type="number" id="acc-goal-input" placeholder="Ex: 500"
+              oninput="saveAccGoal();renderAccessoriesTab()"
+              style="font-size:1.1rem;font-weight:800;">
+          </div>
+          <div class="form-group">
+            <label>Déjà disponible / collecté (€)</label>
+            <input type="number" id="acc-collected-input" placeholder="Ex: 120"
+              oninput="saveAccGoal();renderAccessoriesTab()"
+              style="font-size:1.1rem;font-weight:800;">
+          </div>
+        </div>
+
+        <!-- Jauge + résumé -->
+        <div id="acc-budget-gauge"></div>
+
+      </div>
+
+      <!-- Formulaire ajout rapide -->
+      <div class="acc-add-form" id="acc-tab-add-form" style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleAccTabForm()">
+          <div style="font-weight:800;color:var(--ocean-deep);font-size:0.95rem;">➕ Ajouter un accessoire</div>
+          <span id="acc-tab-form-arrow" style="font-size:1.2rem;transition:transform 0.2s;">▼</span>
+        </div>
+        <div id="acc-tab-form-fields" style="display:none;margin-top:18px;">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Projet associé *</label>
+              <select id="acc-tab-proj-sel">
+                <option value="">Choisir un projet…</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Nom de l'accessoire *</label>
+              <input type="text" id="acc-tab-name" placeholder="Ex: Parasol, Glacière…">
+            </div>
+            <div class="form-group">
+              <label>Prix d'achat (€)</label>
+              <input type="number" id="acc-tab-price" placeholder="25">
+            </div>
+            <div class="form-group">
+              <label>Objectif de financement (€)</label>
+              <input type="number" id="acc-tab-indiv-goal" placeholder="Montant à atteindre pour cet accessoire">
+            </div>
+            <div class="form-group full">
+              <label>Image (URL)</label>
+              <input type="url" id="acc-tab-image" placeholder="https://…">
+            </div>
+            <div class="form-group full">
+              <label>Description / infos</label>
+              <textarea id="acc-tab-info" rows="2" placeholder="Couleur, marque, où acheter, lien produit…"></textarea>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:15px;">
+            <button class="btn btn-success" style="flex:1" onclick="addAccFromTab()">✅ Ajouter</button>
+            <button class="btn" style="background:#eee;color:#333;" onclick="toggleAccTabForm()">Annuler</button>
+          </div>
+        </div>
+      </div>
 
       <!-- Filtres -->
       <div class="filters-bar" style="margin-bottom:20px;">
@@ -3883,9 +3983,9 @@ function saveProject() {
     extra: document.getElementById('proj-extra').value,
     beach: document.getElementById('proj-beach').value,
     equipment: [...selectedEquipments],
-    votes:       editId ? (data.projects.find(p=>p.id===editId)?.votes || []) : [],
-    accessories: editId ? (data.projects.find(p=>p.id===editId)?.accessories || []) : [],
-    createdBy:   currentUser.id,
+    votes:          editId ? (data.projects.find(p=>p.id===editId)?.votes || []) : [],
+    accessories:    editId ? (data.projects.find(p=>p.id===editId)?.accessories || []) : [],
+    createdBy:      currentUser.id,
     createdAt:   editId ? (data.projects.find(p=>p.id===editId)?.createdAt || Date.now()) : Date.now(),
     isFinal: false
   };
@@ -6684,6 +6784,7 @@ function showAppAfterSplash() {
   checkInboxTabVisibility();
   loadDriveLastBackup();
   loadAutoBackupSettings();
+  loadAccGoal();
   updateSbOnline();
   updateSbDrive(driveAuthed ? 'connected' : 'disconnected');
 }
@@ -6807,11 +6908,103 @@ function closeGroupDetail() {
   document.getElementById('group-detail-panel').classList.remove('open');
 }
 
+// ── Budget objectif accessoires ──
+const ACC_GOAL_KEY = 'projetPlage_accGoal';
+
+function saveAccGoal() {
+  const goal      = parseFloat(document.getElementById('acc-goal-input')?.value) || 0;
+  const collected = parseFloat(document.getElementById('acc-collected-input')?.value) || 0;
+  localStorage.setItem(ACC_GOAL_KEY, JSON.stringify({ goal, collected }));
+}
+
+function loadAccGoal() {
+  try {
+    const s = JSON.parse(localStorage.getItem(ACC_GOAL_KEY) || '{}');
+    const gi = document.getElementById('acc-goal-input');
+    const ci = document.getElementById('acc-collected-input');
+    if (gi && s.goal)      gi.value = s.goal;
+    if (ci && s.collected) ci.value = s.collected;
+  } catch(e) {}
+}
+
+function renderAccGoalGauge(allAcc) {
+  const gauge = document.getElementById('acc-budget-gauge');
+  if (!gauge) return;
+
+  const s         = JSON.parse(localStorage.getItem(ACC_GOAL_KEY) || '{}');
+  const goal      = s.goal      || 0;
+  const collected = s.collected || 0;
+
+  // Coûts calculés depuis les accessoires
+  const totalCost   = allAcc.reduce((sum, a) => sum + (parseFloat(a.price)||0), 0);
+  const validCost   = allAcc.filter(a => a.validated).reduce((sum, a) => sum + (parseFloat(a.price)||0), 0);
+
+  // Objectif : priorité à la saisie manuelle, sinon totalCost
+  const target   = goal > 0 ? goal : totalCost;
+  const remaining = Math.max(0, target - collected);
+  const pctColl  = target > 0 ? Math.min(100, (collected / target) * 100) : 0;
+  const pctValid = target > 0 ? Math.min(100, (validCost / target) * 100) : 0;
+
+  if (target === 0 && collected === 0) {
+    gauge.innerHTML = `<p style="font-size:0.85rem;color:var(--text-muted);text-align:center;padding:10px 0;">Saisissez un budget objectif ou ajoutez des accessoires avec prix pour voir le suivi.</p>`;
+    return;
+  }
+
+  const color      = pctColl >= 100 ? 'var(--palm)' : pctColl >= 70 ? 'var(--sand)' : 'var(--coral)';
+  const statusMsg  = remaining === 0
+    ? '🎉 Objectif atteint !'
+    : `Il reste <strong>${remaining.toLocaleString('fr-FR')} €</strong> à réunir`;
+
+  gauge.innerHTML = `
+    <div class="acc-goal-gauge">
+      <div class="acc-goal-row">
+        <span style="font-weight:800;color:var(--ocean-deep);">Progression vers l'objectif</span>
+        <span style="font-size:0.82rem;color:var(--text-muted);">${statusMsg}</span>
+      </div>
+
+      <div class="acc-goal-track">
+        <!-- Barre collecté -->
+        <div class="acc-goal-fill-collected" style="width:${pctColl}%;background:${color};"></div>
+        <!-- Barre accessoires validés (indicateur en surimpression) -->
+        <div class="acc-goal-fill-needed" style="width:${pctValid}%;background:var(--ocean);"></div>
+        <!-- Label % -->
+        <div style="position:absolute;left:50%;top:0;bottom:0;display:flex;align-items:center;transform:translateX(-50%);font-size:0.72rem;font-weight:800;color:${pctColl>30?'white':'var(--text)'};">${Math.round(pctColl)}%</div>
+      </div>
+
+      <!-- Légende barres -->
+      <div style="display:flex;gap:14px;font-size:0.72rem;font-weight:700;color:var(--text-muted);margin-bottom:14px;">
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:4px;background:${color};border-radius:2px;display:inline-block;"></span>Collecté</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:4px;background:var(--ocean);opacity:0.4;border-radius:2px;display:inline-block;"></span>Accessoires validés</span>
+      </div>
+
+      <div class="acc-goal-cards">
+        <div class="acc-goal-card" style="background:#e8f5e9;border-color:#a5d6a7;">
+          <div class="agc-val" style="color:var(--palm);">${collected > 0 ? collected.toLocaleString('fr-FR')+' €' : '—'}</div>
+          <div class="agc-lbl">💰 Déjà disponible</div>
+        </div>
+        <div class="acc-goal-card" style="background:#fce4ec;border-color:#f48fb1;">
+          <div class="agc-val" style="color:var(--coral);">${remaining > 0 ? remaining.toLocaleString('fr-FR')+' €' : '0 €'}</div>
+          <div class="agc-lbl">⏳ Reste à payer</div>
+        </div>
+        <div class="acc-goal-card" style="background:#fff8e0;border-color:#ffe082;">
+          <div class="agc-val" style="color:#e65100;">${totalCost > 0 ? totalCost.toLocaleString('fr-FR')+' €' : '—'}</div>
+          <div class="agc-lbl">🛒 Coût total accessoires</div>
+        </div>
+        <div class="acc-goal-card" style="background:var(--foam);border-color:#b0dff0;">
+          <div class="agc-val" style="color:var(--ocean);">${validCost > 0 ? validCost.toLocaleString('fr-FR')+' €' : '—'}</div>
+          <div class="agc-lbl">✅ Validés (coût)</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 // ═══════════════════════════════════════════════════════
 //  ONGLET ACCESSOIRES — VUE GLOBALE
 // ═══════════════════════════════════════════════════════
 
 function renderAccessoriesTab() {
+  loadAccGoal();   // restaurer les valeurs saisies
   const search     = (document.getElementById('acc-tab-search')?.value || '').toLowerCase();
   const filtProj   = document.getElementById('acc-tab-filter-proj')?.value || '';
   const filtStatus = document.getElementById('acc-tab-filter-status')?.value || '';
@@ -6838,6 +7031,9 @@ function renderAccessoriesTab() {
       }
     });
   });
+
+  // Rendre la jauge avec TOUS les accessoires (pas filtrés)
+  renderAccGoalGauge(all);
 
   // Filtres
   let filtered = all.filter(a => {
@@ -6899,6 +7095,26 @@ function renderAccessoriesTab() {
       return lp ? `<span class="combined-proj-tag" style="font-size:0.7rem;">🔗 ${lp.title}</span>` : '';
     }).join('');
 
+    const price    = parseFloat(a.price) || 0;
+    const indGoal  = parseFloat(a.individualGoal) || 0;
+    const goalPct  = (indGoal > 0 && price > 0) ? Math.min(100, (price / indGoal) * 100) : 0;
+    const goalDiff = indGoal > 0 ? indGoal - price : 0;
+
+    const indGoalHtml = indGoal > 0 ? `
+      <div style="margin-bottom:10px;padding:8px 12px;background:${a.validated?'#e8f5e9':'#fff8e0'};border-radius:10px;border:1.5px solid ${a.validated?'#a5d6a7':'#ffe082'};">
+        <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;margin-bottom:5px;">
+          <span style="color:var(--text-muted);">Objectif d'achat</span>
+          <span style="color:${goalDiff<=0?'var(--palm)':'var(--coral)'};">${goalDiff>0?'Manque '+goalDiff.toLocaleString('fr-FR')+' €':'✅ Atteint'}</span>
+        </div>
+        <div style="background:#e0e0e0;border-radius:6px;height:7px;overflow:hidden;margin-bottom:4px;">
+          <div style="background:${goalPct>=100?'var(--palm)':'var(--sand)'};width:${goalPct}%;height:100%;border-radius:6px;transition:width 0.5s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);">
+          <span>Prix : <strong>${price.toLocaleString('fr-FR')} €</strong></span>
+          <span>Objectif : <strong>${indGoal.toLocaleString('fr-FR')} €</strong></span>
+        </div>
+      </div>` : '';
+
     return `
       <div class="project-card ${a.validated?'proj-validated':''}">
         ${a.validated ? '<div class="acc-status-pin validated">✅ Validé</div>' : ''}
@@ -6908,25 +7124,22 @@ function renderAccessoriesTab() {
           : `<div style="height:120px;background:linear-gradient(135deg,var(--foam),#b0dff0);display:flex;align-items:center;justify-content:center;font-size:3rem;">🎒</div>`}
 
         <div class="project-body">
-          <!-- Nom + prix -->
           <div class="project-title">${a.name}</div>
-          ${a.price ? `<div style="color:var(--coral);font-weight:800;font-size:1.05rem;margin-bottom:6px;">${parseFloat(a.price).toLocaleString('fr-FR')} €</div>` : ''}
+          ${a.price ? `<div style="color:var(--coral);font-weight:800;font-size:1.05rem;margin-bottom:6px;">${price.toLocaleString('fr-FR')} €</div>` : ''}
 
-          <!-- Description / infos -->
           ${a.info ? `<p style="font-size:0.83rem;color:var(--text-muted);line-height:1.5;margin-bottom:10px;border-left:3px solid var(--border);padding-left:8px;">${a.info}</p>` : ''}
 
-          <!-- Projet associé -->
+          ${indGoalHtml}
+
           <div style="margin-bottom:10px;display:flex;flex-direction:column;gap:4px;">
             <div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">Projet associé</div>
             <div style="display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="closeGroupDetail();showTab('tab-projects');setBottomNav('bn-projects');setTimeout(()=>openAccessoriesPanel('${a._projId}'),200)">
-              ${a.image ? `<img src="${proj?.image||''}" style="width:28px;height:28px;object-fit:cover;border-radius:6px;flex-shrink:0;" onerror="this.style.display='none'">` : ''}
               <span style="font-weight:800;color:var(--ocean);font-size:0.85rem;text-decoration:underline;">${a._projTitle}</span>
               ${grp ? `<span style="background:${getGroupColor(data.groups.indexOf(grp))};color:white;padding:2px 7px;border-radius:8px;font-size:0.7rem;font-weight:700;">${grp.name}</span>` : ''}
             </div>
             ${linked ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;">${linked}</div>` : ''}
           </div>
 
-          <!-- Votes -->
           <div class="acc-vote-wrap" style="margin-bottom:10px;">
             <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;margin-bottom:4px;">
               <span style="color:var(--text-muted);">${votes.length}/${threshold} vote(s)</span>
@@ -6938,7 +7151,6 @@ function renderAccessoriesTab() {
             ${voterNames ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">${voterNames}</div>` : ''}
           </div>
 
-          <!-- Actions -->
           <div class="project-actions">
             ${!a.validated
               ? hasVote
@@ -6960,6 +7172,62 @@ voteAccessory = function(pid, aid) {
   _origVoteAcc(pid, aid);
   if (document.getElementById('tab-accessories')?.classList.contains('active')) renderAccessoriesTab();
 };
+
+// ── Formulaire ajout rapide depuis l'onglet Accessoires ──
+function toggleAccTabForm() {
+  const fields = document.getElementById('acc-tab-form-fields');
+  const arrow  = document.getElementById('acc-tab-form-arrow');
+  const form   = document.getElementById('acc-tab-add-form');
+  const open   = fields.style.display !== 'none';
+  fields.style.display = open ? 'none' : 'block';
+  arrow.style.transform = open ? '' : 'rotate(180deg)';
+  form.classList.toggle('expanded', !open);
+  if (!open) {
+    const sel = document.getElementById('acc-tab-proj-sel');
+    if (sel) sel.innerHTML = '<option value="">Choisir un projet…</option>' +
+      data.projects.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
+    setTimeout(() => document.getElementById('acc-tab-name')?.focus(), 100);
+  }
+}
+
+function addAccFromTab() {
+  const projId = document.getElementById('acc-tab-proj-sel')?.value;
+  const name   = document.getElementById('acc-tab-name')?.value.trim();
+  if (!projId) { toast('Choisissez un projet', 'error'); return; }
+  if (!name)   { toast('Nom requis', 'error'); return; }
+
+  const proj = data.projects.find(p => p.id === projId);
+  if (!proj) return;
+  if (!proj.accessories) proj.accessories = [];
+
+  const indGoal = parseFloat(document.getElementById('acc-tab-indiv-goal')?.value) || 0;
+
+  proj.accessories.push({
+    id:             'acc' + Date.now(),
+    name,
+    image:          document.getElementById('acc-tab-image')?.value.trim() || '',
+    price:          document.getElementById('acc-tab-price')?.value || '',
+    individualGoal: indGoal,
+    info:           document.getElementById('acc-tab-info')?.value.trim() || '',
+    votes:          [],
+    validated:      false,
+    linkedProjects: [],
+    createdBy:      currentUser.id,
+    createdAt:      Date.now()
+  });
+
+  saveData();
+
+  ['acc-tab-name','acc-tab-image','acc-tab-price','acc-tab-indiv-goal','acc-tab-info']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const sel = document.getElementById('acc-tab-proj-sel');
+  if (sel) sel.value = '';
+
+  toggleAccTabForm();
+  renderAccessoriesTab();
+  toast(`🎒 "${name}" ajouté à "${proj.title}" !`, 'success');
+}
+
 loadData();
 initLoginScreen();
 initPWA();
