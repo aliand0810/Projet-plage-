@@ -3831,6 +3831,58 @@ header {
   </div>
 </div>
 
+<!-- MODAL ÉDITION ACCESSOIRE -->
+<div class="modal-overlay" id="modal-acc-edit">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">✏️ Modifier l'accessoire</div>
+      <button class="modal-close" onclick="closeModal('modal-acc-edit')">✕</button>
+    </div>
+    <input type="hidden" id="edit-acc-id">
+    <input type="hidden" id="edit-acc-proj-id">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nom *</label>
+        <input type="text" id="edit-acc-name" placeholder="Nom de l'accessoire">
+      </div>
+      <div class="form-group">
+        <label>Prix d'achat (€)</label>
+        <input type="number" id="edit-acc-price" placeholder="25">
+      </div>
+      <div class="form-group">
+        <label>Objectif de financement (€)</label>
+        <input type="number" id="edit-acc-goal" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>Disponibilité</label>
+        <select id="edit-acc-available">
+          <option value="">Non précisé</option>
+          <option value="available">✅ Disponible</option>
+          <option value="partial">⚠️ Partiellement disponible</option>
+          <option value="unavailable">❌ Indisponible</option>
+          <option value="tobuy">🛒 À acheter</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Quantité en stock</label>
+        <input type="number" id="edit-acc-stock" placeholder="0" min="0">
+      </div>
+      <div class="form-group full">
+        <label>Image (URL)</label>
+        <input type="url" id="edit-acc-image" placeholder="https://…">
+      </div>
+      <div class="form-group full">
+        <label>Description / infos</label>
+        <textarea id="edit-acc-info" rows="3" placeholder="Couleur, marque, où acheter…"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-primary" style="flex:1" onclick="saveEditAccessory()">💾 Enregistrer</button>
+      <button class="btn" style="background:var(--bg-2);color:var(--text-muted);" onclick="closeModal('modal-acc-edit')">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <!-- CORBEILLE MODAL -->
 <div class="modal-overlay" id="modal-trash">
   <div class="modal" style="max-width:540px;">
@@ -7112,12 +7164,91 @@ function renderAccessories() {
                 <button class="btn btn-sand btn-sm" onclick="combineAccessoryWithProject('${pid}','${acc.id}')">🔗</button>
               </div>
             ` : ''}
-            ${isOwnerOrAdmin(acc) ? `<button class="btn btn-danger btn-sm" onclick="removeAccessory('${pid}','${acc.id}')">🗑</button>` : ''}
+            ${isOwnerOrAdmin(acc) ? `
+              <button class="btn btn-sm" style="background:var(--foam);color:var(--primary);" onclick="openEditAccessory('${pid}','${acc.id}')">✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="removeAccessory('${pid}','${acc.id}')">🗑</button>
+            ` : ''}
           </div>
         </div>
       </div>
     `;
   }).join('');
+}
+
+// ── Modifier un accessoire ──────────────────────────────
+function openEditAccessory(pid, aid) {
+  // Chercher l'accessoire dans le projet ou dans les globaux
+  let acc = null;
+  if (pid) {
+    const proj = data.projects.find(p => p.id === pid);
+    acc = (proj?.accessories||[]).find(a => a.id === aid);
+  } else {
+    acc = (data.globalAccessories||[]).find(a => a.id === aid);
+  }
+  if (!acc) return;
+
+  document.getElementById('edit-acc-id').value       = aid;
+  document.getElementById('edit-acc-proj-id').value  = pid || '';
+  document.getElementById('edit-acc-name').value     = acc.name || '';
+  document.getElementById('edit-acc-price').value    = acc.price || '';
+  document.getElementById('edit-acc-goal').value     = acc.individualGoal || '';
+  document.getElementById('edit-acc-available').value = acc.availability || '';
+  document.getElementById('edit-acc-stock').value    = acc.stock || '';
+  document.getElementById('edit-acc-image').value    = acc.image || '';
+  document.getElementById('edit-acc-info').value     = acc.info || '';
+
+  document.getElementById('modal-acc-edit').classList.add('open');
+  setTimeout(() => document.getElementById('edit-acc-name').focus(), 150);
+}
+
+function saveEditAccessory() {
+  const aid  = document.getElementById('edit-acc-id').value;
+  const pid  = document.getElementById('edit-acc-proj-id').value || null;
+  const name = document.getElementById('edit-acc-name').value.trim();
+  if (!name) { toast('Nom requis !', 'error'); return; }
+
+  // Trouver et mettre à jour l'accessoire
+  let acc = null;
+  if (pid) {
+    const proj = data.projects.find(p => p.id === pid);
+    acc = (proj?.accessories||[]).find(a => a.id === aid);
+  } else {
+    acc = (data.globalAccessories||[]).find(a => a.id === aid);
+  }
+  if (!acc) { toast('Accessoire introuvable', 'error'); return; }
+
+  // Appliquer les modifications
+  acc.name          = name;
+  acc.price         = document.getElementById('edit-acc-price').value;
+  acc.individualGoal = parseFloat(document.getElementById('edit-acc-goal').value) || 0;
+  acc.availability  = document.getElementById('edit-acc-available').value;
+  acc.stock         = parseInt(document.getElementById('edit-acc-stock').value) || 0;
+  acc.image         = document.getElementById('edit-acc-image').value.trim();
+  acc.info          = document.getElementById('edit-acc-info').value.trim();
+  acc.updatedAt     = Date.now();
+
+  // Propager les modifications aux copies liées (même id dans d'autres projets)
+  if (acc.linkedProjects?.length) {
+    acc.linkedProjects.forEach(lid => {
+      const lp = data.projects.find(p => p.id === lid);
+      if (!lp) return;
+      const linked = (lp.accessories||[]).find(a => a.id === aid);
+      if (linked) {
+        Object.assign(linked, {
+          name: acc.name, price: acc.price, individualGoal: acc.individualGoal,
+          availability: acc.availability, stock: acc.stock,
+          image: acc.image, info: acc.info, updatedAt: acc.updatedAt
+        });
+      }
+    });
+  }
+
+  saveData();
+  closeModal('modal-acc-edit');
+  // Rafraîchir la vue active
+  if (currentAccProjectId) renderAccessories();
+  if (document.getElementById('tab-accessories')?.classList.contains('active')) renderAccessoriesTab();
+  toast(`✅ "${name}" modifié !`, 'success');
 }
 
 function unlinkAccessory(pid, aid, targetId) {
@@ -8058,7 +8189,10 @@ function renderAccessoriesTab() {
               : '<span style="color:var(--palm);font-weight:800;font-size:0.82rem;">✅ Validé</span>'
             }
             <button class="btn btn-sm" style="background:#e8f4fd;color:var(--ocean);" onclick="showTab('tab-projects');setBottomNav('bn-projects');setTimeout(()=>openAccessoriesPanel('${a._projId}'),200)">🔗 Ouvrir</button>
-            ${isOwnerOrAdmin(a) ? `<button class="btn btn-danger btn-sm" onclick="removeAccessory(${a._projId?`'${a._projId}'`:'null'},'${a.id}')">🗑</button>` : ''}
+            ${isOwnerOrAdmin(a) ? `
+              <button class="btn btn-sm" style="background:var(--foam);color:var(--primary);" onclick="openEditAccessory(${a._projId?`'${a._projId}'`:'null'},'${a.id}')">✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="removeAccessory(${a._projId?`'${a._projId}'`:'null'},'${a.id}')">🗑</button>
+            ` : ''}
           </div>
         </div>
       </div>`;
@@ -8652,6 +8786,9 @@ document.getElementById('modal-password').addEventListener('click', function(e) 
 });
 document.getElementById('modal-trash')?.addEventListener('click', function(e) {
   if (e.target === this) closeModal('modal-trash');
+});
+document.getElementById('modal-acc-edit')?.addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-acc-edit');
 });
 </script>
 </body>
