@@ -751,122 +751,10 @@ header {
   .main-content { padding: 16px 14px; }
 }
 
-#login-screen::before {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 160px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 160'%3E%3Cpath fill='%23f0f9ff' d='M0,96L48,85.3C96,75,192,53,288,58.7C384,64,480,96,576,101.3C672,107,768,85,864,80C960,75,1056,85,1152,90.7C1248,96,1344,96,1392,96L1440,96L1440,160L0,160Z'/%3E%3C/svg%3E") no-repeat bottom/cover;
-}
-
-.login-box {
-  background: rgba(255,255,255,0.97);
-  border-radius: 24px;
-  padding: 50px 40px;
-  width: 420px;
-  max-width: 95vw;
-  box-shadow: 0 30px 80px rgba(0,0,0,0.3);
-  position: relative;
-  z-index: 1;
-  text-align: center;
-}
-
-.login-logo {
-  font-family: 'Pacifico', cursive;
-  font-size: 2.5rem;
-  color: var(--ocean);
-  margin-bottom: 6px;
-}
-
-.login-sub {
-  color: var(--text-muted);
-  font-size: 0.95rem;
-  margin-bottom: 35px;
-}
-
-.login-box label {
-  display: block;
-  text-align: left;
-  font-weight: 700;
-  margin-bottom: 8px;
-  color: var(--ocean-deep);
-}
-
-.login-box input {
-  width: 100%;
-  padding: 14px 18px;
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-family: 'Nunito', sans-serif;
-  transition: border-color 0.2s;
-  letter-spacing: 4px;
-  text-align: center;
-  font-weight: 800;
-  color: var(--ocean-deep);
-}
-
-.login-box input:focus { outline: none; border-color: var(--ocean); }
-
-.login-error {
-  color: var(--coral);
-  font-size: 0.9rem;
-  margin-top: 10px;
-  min-height: 20px;
-  font-weight: 600;
-}
-
-.btn-login {
-  width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, var(--ocean), var(--sky));
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 800;
-  cursor: pointer;
-  margin-top: 20px;
-  transition: transform 0.2s, box-shadow 0.2s;
-  font-family: 'Nunito', sans-serif;
-}
-
-.btn-login:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,119,182,0.4); }
-
-.demo-codes {
-  margin-top: 25px;
-  padding: 15px;
-  background: var(--foam);
-  border-radius: 10px;
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  text-align: left;
-}
-
-.demo-codes strong { color: var(--ocean-deep); }
-
 /* ═══════════════════════════════════════
    APP PRINCIPALE
 ════════════════════════════════════════ */
 #app { display: none; }
-
-header {
-  background: linear-gradient(135deg, var(--ocean-deep), var(--ocean));
-  color: white;
-  padding: 0 20px;
-  padding-top: env(safe-area-inset-top); /* Dynamic Island / notch iPhone */
-  padding-left: max(20px, env(safe-area-inset-left));
-  padding-right: max(20px, env(safe-area-inset-right));
-  height: calc(65px + env(safe-area-inset-top));
-  display: flex;
-  align-items: flex-end;
-  padding-bottom: 0;
-  justify-content: space-between;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
 
 .header-inner {
   display: flex;
@@ -4247,22 +4135,16 @@ function doLogin() {
 
   // Onglet admin visible uniquement si admin
   const adminTab = document.getElementById('nt-admin');
-  adminTab.style.display = profile.role === 'admin' ? 'inline-flex' : 'none';
+  if (adminTab) adminTab.style.display = profile.role === 'admin' ? 'inline-flex' : 'none';
 
   // Afficher bouton Messages dans le header
   const msgBtn = document.getElementById('header-msg-btn');
   if (msgBtn) msgBtn.style.display = 'inline-flex';
   // Afficher le bouton Drive
-  document.getElementById('drive-status-wrap').style.display = 'flex';
+  const dsw = document.getElementById('drive-status-wrap');
+  if (dsw) dsw.style.display = 'flex';
 
-  // Badge en ligne dans le header
-  const hoc = document.createElement('span');
-  hoc.id = 'header-online-count';
-  hoc.className = 'header-online-count';
-  document.getElementById('header-right')?.appendChild(hoc) || document.querySelector('.header-right')?.appendChild(hoc);
-
-  refreshAll();
-  // Restauration Drive avant d'afficher l'app
+  // Restauration Drive avant d'afficher l'app (appelle showAppAfterSplash en interne)
   loginRestoreFlow();
 }
 
