@@ -2411,6 +2411,9 @@ header {
     <button class="bottom-nav-btn" id="bn-budget" onclick="showTab('tab-budget');setBottomNav('bn-budget')">
       <span class="bnb-icon">💰</span>Budget
     </button>
+    <button class="bottom-nav-btn" id="bn-accessories" onclick="showTab('tab-accessories');setBottomNav('bn-accessories')">
+      <span class="bnb-icon">🎒</span>Accessoires
+    </button>
     <button class="bottom-nav-btn" id="bn-inbox" onclick="showTab('tab-inbox');setBottomNav('bn-inbox')">
       <span class="bnb-icon">💬</span>Messages
     </button>
@@ -2424,6 +2427,7 @@ header {
     <button class="nav-tab" onclick="showTab('tab-groups')" id="nt-groups">📁 Groupes</button>
     <button class="nav-tab" onclick="showTab('tab-projects')" id="nt-projects">🏖 Projets</button>
     <button class="nav-tab" onclick="showTab('tab-budget')" id="nt-budget">💰 Budget</button>
+    <button class="nav-tab" onclick="showTab('tab-accessories')" id="nt-accessories">🎒 Accessoires</button>
     <button class="nav-tab" onclick="showTab('tab-inbox')" id="nt-inbox">💬 Messages</button>
     <button class="nav-tab admin-only" onclick="showTab('tab-admin')" id="nt-admin">⚙️ Administration</button>
   </div><!-- /nav-tabs -->
@@ -2636,6 +2640,43 @@ header {
         </div>
 
       </div>
+    </div>
+
+    <!-- ──────── ACCESSOIRES ──────── -->
+    <div class="tab-section" id="tab-accessories">
+
+      <!-- Filtres -->
+      <div class="filters-bar" style="margin-bottom:20px;">
+        <div class="form-group">
+          <label>Rechercher</label>
+          <input type="text" id="acc-tab-search" placeholder="Nom, info…" oninput="renderAccessoriesTab()">
+        </div>
+        <div class="form-group">
+          <label>Projet</label>
+          <select id="acc-tab-filter-proj" onchange="renderAccessoriesTab()">
+            <option value="">Tous les projets</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Statut</label>
+          <select id="acc-tab-filter-status" onchange="renderAccessoriesTab()">
+            <option value="">Tous</option>
+            <option value="validated">✅ Validés</option>
+            <option value="pending">⏳ En attente</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Budget max (€)</label>
+          <input type="number" id="acc-tab-filter-budget" placeholder="Illimité" oninput="renderAccessoriesTab()">
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stats-row" id="acc-tab-stats" style="margin-bottom:20px;"></div>
+
+      <!-- Grille -->
+      <div class="projects-grid" id="acc-tab-grid"></div>
+
     </div>
 
     <!-- ──────── ADMINISTRATION ──────── -->
@@ -3341,7 +3382,7 @@ function showTab(tabId) {
   document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(tabId).classList.add('active');
-  const nt = { 'tab-dashboard': 'nt-dashboard', 'tab-groups': 'nt-groups', 'tab-projects': 'nt-projects', 'tab-budget': 'nt-budget', 'tab-admin': 'nt-admin', 'tab-inbox': 'nt-inbox' };
+  const nt = { 'tab-dashboard': 'nt-dashboard', 'tab-groups': 'nt-groups', 'tab-projects': 'nt-projects', 'tab-budget': 'nt-budget', 'tab-admin': 'nt-admin', 'tab-inbox': 'nt-inbox', 'tab-accessories': 'nt-accessories' };
   if (nt[tabId]) document.getElementById(nt[tabId]).classList.add('active');
 
   if (tabId === 'tab-projects') renderProjects();
@@ -3349,7 +3390,7 @@ function showTab(tabId) {
   if (tabId === 'tab-admin') { renderProfiles(); renderThresholdSelector(); }
   if (tabId === 'tab-groups') renderGroups();
   if (tabId === 'tab-dashboard') renderDashboard();
-  if (tabId === 'tab-inbox') renderInbox();
+  if (tabId === 'tab-accessories') renderAccessoriesTab();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -6351,7 +6392,8 @@ function setBottomNav(activeId) {
 const _tabToBn = {
   'tab-dashboard':'bn-dashboard','tab-groups':'bn-groups',
   'tab-projects':'bn-projects','tab-budget':'bn-budget',
-  'tab-inbox':'bn-inbox','tab-admin':'bn-admin'
+  'tab-inbox':'bn-inbox','tab-admin':'bn-admin',
+  'tab-accessories':'bn-accessories'
 };
 const _realShowTab = showTab;
 showTab = function(tabId) {
@@ -6424,11 +6466,12 @@ async function drivePollTick() {
         localStorage.setItem('projetPlage_lastRestoreTs', Date.now().toString());
         // Rafraîchir l'onglet actif
         const activeTab = document.querySelector('.tab-section.active')?.id;
-        if (activeTab === 'tab-dashboard') renderDashboard();
-        if (activeTab === 'tab-projects')  renderProjects();
-        if (activeTab === 'tab-groups')    renderGroups();
-        if (activeTab === 'tab-inbox')     renderInbox();
-        if (activeTab === 'tab-budget')    renderBudget();
+        if (activeTab === 'tab-dashboard')   renderDashboard();
+        if (activeTab === 'tab-projects')    renderProjects();
+        if (activeTab === 'tab-groups')      renderGroups();
+        if (activeTab === 'tab-inbox')       renderInbox();
+        if (activeTab === 'tab-budget')      renderBudget();
+        if (activeTab === 'tab-accessories') renderAccessoriesTab();
         updateFabBadge();
         showSyncIndicator('saved');
         updateSbDrive('connected');
@@ -6765,8 +6808,158 @@ function closeGroupDetail() {
 }
 
 // ═══════════════════════════════════════════════════════
-//  INIT
+//  ONGLET ACCESSOIRES — VUE GLOBALE
 // ═══════════════════════════════════════════════════════
+
+function renderAccessoriesTab() {
+  const search     = (document.getElementById('acc-tab-search')?.value || '').toLowerCase();
+  const filtProj   = document.getElementById('acc-tab-filter-proj')?.value || '';
+  const filtStatus = document.getElementById('acc-tab-filter-status')?.value || '';
+  const filtBudget = parseFloat(document.getElementById('acc-tab-filter-budget')?.value) || Infinity;
+
+  // Mettre à jour le select projets
+  const sel = document.getElementById('acc-tab-filter-proj');
+  if (sel) {
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Tous les projets</option>' +
+      data.projects
+        .filter(p => (p.accessories||[]).length > 0)
+        .map(p => `<option value="${p.id}" ${cur===p.id?'selected':''}>${p.title}</option>`)
+        .join('');
+    sel.value = cur;
+  }
+
+  // Collecter tous les accessoires uniques
+  const all = [];
+  data.projects.forEach(p => {
+    (p.accessories || []).forEach(a => {
+      if (!all.find(x => x._uid === p.id + a.id)) {
+        all.push({ ...a, _projId: p.id, _projTitle: p.title, _projColor: getGroupColor(data.groups.findIndex(g=>g.id===p.groupId)), _uid: p.id + a.id });
+      }
+    });
+  });
+
+  // Filtres
+  let filtered = all.filter(a => {
+    const matchSearch = !search || a.name.toLowerCase().includes(search) || (a.info||'').toLowerCase().includes(search) || a._projTitle.toLowerCase().includes(search);
+    const matchProj   = !filtProj || a._projId === filtProj;
+    const matchStatus = !filtStatus || (filtStatus === 'validated' ? a.validated : !a.validated);
+    const matchBudget = !a.price || parseFloat(a.price) <= filtBudget;
+    return matchSearch && matchProj && matchStatus && matchBudget;
+  });
+
+  // Stats
+  const totalAcc   = filtered.length;
+  const validated  = filtered.filter(a => a.validated).length;
+  const totalBudg  = filtered.reduce((s,a)=>s+(parseFloat(a.price)||0),0);
+  const valBudg    = filtered.filter(a=>a.validated).reduce((s,a)=>s+(parseFloat(a.price)||0),0);
+
+  const statsEl = document.getElementById('acc-tab-stats');
+  if (statsEl) statsEl.innerHTML = `
+    <div class="stat-card ocean" style="cursor:default;"><div class="stat-value">${totalAcc}</div><div class="stat-label">Accessoires</div></div>
+    <div class="stat-card palm"  style="cursor:default;"><div class="stat-value">${validated}</div><div class="stat-label">Validés ✅</div></div>
+    <div class="stat-card coral" style="cursor:default;"><div class="stat-value">${totalBudg>0?totalBudg.toLocaleString('fr-FR')+' €':'—'}</div><div class="stat-label">Budget total</div></div>
+    <div class="stat-card sand"  style="cursor:default;"><div class="stat-value">${valBudg>0?valBudg.toLocaleString('fr-FR')+' €':'—'}</div><div class="stat-label">Budget validé</div></div>
+  `;
+
+  const grid = document.getElementById('acc-tab-grid');
+  if (!grid) return;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">🎒</div><p>Aucun accessoire${search?' pour "'+search+'"':''}</p></div>`;
+    return;
+  }
+
+  const threshold = data.validationThreshold || 2;
+  const isOwnerOrAdmin = a => currentUser && (currentUser.id === a.createdBy || currentUser.role === 'admin');
+
+  // Trier : validés en haut
+  filtered.sort((a,b) => (b.validated?1:0) - (a.validated?1:0) || (b.votes||[]).length - (a.votes||[]).length);
+
+  grid.innerHTML = filtered.map(a => {
+    const votes   = a.votes || [];
+    const pct     = Math.min(100, (votes.length / threshold) * 100);
+    const hasVote = votes.includes(currentUser?.id);
+    const proj    = data.projects.find(p => p.id === a._projId);
+    const grp     = proj ? data.groups.find(g => g.id === proj.groupId) : null;
+
+    const voterAvatars = votes.map(vid => {
+      const vp = data.profiles.find(pr => pr.id === vid);
+      return vp ? `<div class="vote-avatar-sm" style="background:${vp.color};width:20px;height:20px;font-size:0.6rem;" title="${vp.name}">${vp.name[0]}</div>` : '';
+    }).join('');
+
+    const voterNames = votes.map(vid => {
+      const vp = data.profiles.find(pr => pr.id === vid);
+      return vp ? `<span style="background:${vp.color};color:white;padding:2px 7px;border-radius:8px;font-size:0.7rem;font-weight:700;">${vp.name.split(' ')[0]}</span>` : '';
+    }).join(' ');
+
+    // Projets liés (multi-combinés)
+    const linked = (a.linkedProjects || []).map(lid => {
+      const lp = data.projects.find(p=>p.id===lid);
+      return lp ? `<span class="combined-proj-tag" style="font-size:0.7rem;">🔗 ${lp.title}</span>` : '';
+    }).join('');
+
+    return `
+      <div class="project-card ${a.validated?'proj-validated':''}">
+        ${a.validated ? '<div class="acc-status-pin validated">✅ Validé</div>' : ''}
+
+        ${a.image
+          ? `<img class="project-img" src="${a.image}" alt="${a.name}" onerror="this.src='https://placehold.co/400x180/caf0f8/0077b6?text=🎒'" style="height:160px;">`
+          : `<div style="height:120px;background:linear-gradient(135deg,var(--foam),#b0dff0);display:flex;align-items:center;justify-content:center;font-size:3rem;">🎒</div>`}
+
+        <div class="project-body">
+          <!-- Nom + prix -->
+          <div class="project-title">${a.name}</div>
+          ${a.price ? `<div style="color:var(--coral);font-weight:800;font-size:1.05rem;margin-bottom:6px;">${parseFloat(a.price).toLocaleString('fr-FR')} €</div>` : ''}
+
+          <!-- Description / infos -->
+          ${a.info ? `<p style="font-size:0.83rem;color:var(--text-muted);line-height:1.5;margin-bottom:10px;border-left:3px solid var(--border);padding-left:8px;">${a.info}</p>` : ''}
+
+          <!-- Projet associé -->
+          <div style="margin-bottom:10px;display:flex;flex-direction:column;gap:4px;">
+            <div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">Projet associé</div>
+            <div style="display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="closeGroupDetail();showTab('tab-projects');setBottomNav('bn-projects');setTimeout(()=>openAccessoriesPanel('${a._projId}'),200)">
+              ${a.image ? `<img src="${proj?.image||''}" style="width:28px;height:28px;object-fit:cover;border-radius:6px;flex-shrink:0;" onerror="this.style.display='none'">` : ''}
+              <span style="font-weight:800;color:var(--ocean);font-size:0.85rem;text-decoration:underline;">${a._projTitle}</span>
+              ${grp ? `<span style="background:${getGroupColor(data.groups.indexOf(grp))};color:white;padding:2px 7px;border-radius:8px;font-size:0.7rem;font-weight:700;">${grp.name}</span>` : ''}
+            </div>
+            ${linked ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;">${linked}</div>` : ''}
+          </div>
+
+          <!-- Votes -->
+          <div class="acc-vote-wrap" style="margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;margin-bottom:4px;">
+              <span style="color:var(--text-muted);">${votes.length}/${threshold} vote(s)</span>
+              <div style="display:flex;gap:3px;">${voterAvatars}</div>
+            </div>
+            <div class="acc-vote-track">
+              <div class="${a.validated?'acc-vote-fill-v':'acc-vote-fill-p'}" style="width:${pct}%"></div>
+            </div>
+            ${voterNames ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">${voterNames}</div>` : ''}
+          </div>
+
+          <!-- Actions -->
+          <div class="project-actions">
+            ${!a.validated
+              ? hasVote
+                ? `<button class="btn-unvote" onclick="voteAccessory('${a._projId}','${a.id}');renderAccessoriesTab()">✖ Retirer</button>`
+                : `<button class="btn-vote" onclick="voteAccessory('${a._projId}','${a.id}');renderAccessoriesTab()">👍 Voter</button>`
+              : '<span style="color:var(--palm);font-weight:800;font-size:0.82rem;">✅ Validé</span>'
+            }
+            <button class="btn btn-sm" style="background:#e8f4fd;color:var(--ocean);" onclick="showTab('tab-projects');setBottomNav('bn-projects');setTimeout(()=>openAccessoriesPanel('${a._projId}'),200)">🔗 Ouvrir</button>
+            ${isOwnerOrAdmin(a) ? `<button class="btn btn-danger btn-sm" onclick="removeAccessory('${a._projId}','${a.id}');renderAccessoriesTab()">🗑</button>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// Surgical improvement : rafraîchir onglet accessoires lors d'un vote ou suppression
+const _origVoteAcc = voteAccessory;
+voteAccessory = function(pid, aid) {
+  _origVoteAcc(pid, aid);
+  if (document.getElementById('tab-accessories')?.classList.contains('active')) renderAccessoriesTab();
+};
 loadData();
 initLoginScreen();
 initPWA();
