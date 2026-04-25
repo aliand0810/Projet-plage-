@@ -3398,6 +3398,12 @@ header {
     <!-- ──────── ACCESSOIRES ──────── -->
     <div class="tab-section" id="tab-accessories">
 
+      <!-- Header avec bouton corbeille -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+        <div style="font-size:1.1rem;font-weight:800;color:var(--text);">🎒 Accessoires</div>
+        <button id="trash-btn" class="btn btn-sm" style="background:var(--bg-2);color:var(--text-muted);border:1px solid var(--border);" onclick="openTrashModal()">🗑 Corbeille</button>
+      </div>
+
       <!-- Panel budget objectif -->
       <div class="panel" style="margin-bottom:20px;">
         <div class="panel-title" style="margin-bottom:16px;">🎯 Budget commande — suivi de financement</div>
@@ -3431,9 +3437,9 @@ header {
         <div id="acc-tab-form-fields" style="display:none;margin-top:18px;">
           <div class="form-grid">
             <div class="form-group">
-              <label>Projet associé *</label>
+              <label>Projet associé <span style="font-weight:400;color:var(--text-muted)">(optionnel)</span></label>
               <select id="acc-tab-proj-sel">
-                <option value="">Choisir un projet…</option>
+                <option value="">Aucun projet spécifique</option>
               </select>
             </div>
             <div class="form-group">
@@ -3446,7 +3452,21 @@ header {
             </div>
             <div class="form-group">
               <label>Objectif de financement (€)</label>
-              <input type="number" id="acc-tab-indiv-goal" placeholder="Montant à atteindre pour cet accessoire">
+              <input type="number" id="acc-tab-indiv-goal" placeholder="Montant à atteindre">
+            </div>
+            <div class="form-group">
+              <label>Disponibilité</label>
+              <select id="acc-tab-available">
+                <option value="">Non précisé</option>
+                <option value="available">✅ Disponible</option>
+                <option value="partial">⚠️ Partiellement disponible</option>
+                <option value="unavailable">❌ Indisponible</option>
+                <option value="tobuy">🛒 À acheter</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Quantité en stock</label>
+              <input type="number" id="acc-tab-stock" placeholder="0" min="0">
             </div>
             <div class="form-group full">
               <label>Image (URL)</label>
@@ -3840,6 +3860,20 @@ header {
               <label>Prix (€)</label>
               <input type="number" id="acc-price" placeholder="25">
             </div>
+            <div class="form-group">
+              <label>Disponibilité</label>
+              <select id="acc-available">
+                <option value="">Non précisé</option>
+                <option value="available">✅ Disponible</option>
+                <option value="partial">⚠️ Partiellement disponible</option>
+                <option value="unavailable">❌ Indisponible</option>
+                <option value="tobuy">🛒 À acheter</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Quantité en stock</label>
+              <input type="number" id="acc-stock" placeholder="0" min="0">
+            </div>
             <div class="form-group full">
               <label>Image (URL lien web)</label>
               <input type="url" id="acc-image" placeholder="https://... lien image">
@@ -3906,6 +3940,21 @@ header {
       oninput="renderAccExistTabList()"
       style="width:100%;padding:9px 13px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:'Nunito',sans-serif;margin-bottom:12px;box-sizing:border-box;">
     <div id="acc-exist-tab-list" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+  </div>
+</div>
+
+<!-- CORBEILLE MODAL -->
+<div class="modal-overlay" id="modal-trash">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal-header">
+      <div class="modal-title">🗑 Corbeille</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-danger btn-sm" onclick="emptyTrash()">Vider</button>
+        <button class="modal-close" onclick="closeModal('modal-trash')">✕</button>
+      </div>
+    </div>
+    <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:16px;">Les éléments supprimés peuvent être restaurés. Supprimez définitivement pour libérer de l'espace.</p>
+    <div id="trash-list"></div>
   </div>
 </div>
 
@@ -6847,7 +6896,6 @@ function addAccessory() {
   if (!proj) return;
   if (!proj.accessories) proj.accessories = [];
 
-  // Projets combinés sélectionnés
   const sel = document.getElementById('acc-combine-select');
   const linkedProjects = Array.from(sel.selectedOptions).map(o => o.value);
 
@@ -6857,6 +6905,8 @@ function addAccessory() {
     image:          document.getElementById('acc-image').value.trim(),
     price:          document.getElementById('acc-price').value,
     info:           document.getElementById('acc-info').value.trim(),
+    availability:   document.getElementById('acc-available')?.value || '',
+    stock:          parseInt(document.getElementById('acc-stock')?.value) || 0,
     votes:          [],
     validated:      false,
     linkedProjects,
@@ -6881,6 +6931,8 @@ function addAccessory() {
 
   // Reset form
   ['acc-name','acc-image','acc-price','acc-info'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  const avEl = document.getElementById('acc-available'); if(avEl) avEl.value='';
+  const stEl = document.getElementById('acc-stock');     if(stEl) stEl.value='';
   Array.from(sel.options).forEach(o => o.selected = false);
 
   renderAccessories();
@@ -6931,24 +6983,109 @@ function syncAccessoryToLinked(acc, sourcePid) {
 }
 
 function removeAccessory(pid, aid) {
-  const proj = data.projects.find(p => p.id === pid);
-  if (!proj) return;
-  const acc = (proj.accessories||[]).find(a => a.id === aid);
+  const proj = pid ? data.projects.find(p => p.id === pid) : null;
+  const acc  = proj ? (proj.accessories||[]).find(a => a.id === aid)
+                    : (data.globalAccessories||[]).find(a => a.id === aid);
+  if (!acc) return;
 
-  // Retirer des projets liés aussi
-  if (acc) {
-    (acc.linkedProjects || []).forEach(targetId => {
-      const target = data.projects.find(p => p.id === targetId);
-      if (target && target.accessories) {
-        target.accessories = target.accessories.filter(a => a.id !== aid);
-      }
-    });
+  confirmAction(`Supprimer "<strong>${acc.name}</strong>" ?<br><small style="color:var(--text-muted);">Vous pourrez le restaurer depuis la corbeille.</small>`, () => {
+    if (!data.trash) data.trash = [];
+    data.trash.push({ ...acc, _deletedAt: Date.now(), _deletedFrom: pid||'global', _type: 'accessory' });
+
+    if (proj) {
+      proj.accessories = (proj.accessories||[]).filter(a => a.id !== aid);
+      (acc.linkedProjects||[]).forEach(lid => {
+        const lp = data.projects.find(p => p.id === lid);
+        if (lp) lp.accessories = (lp.accessories||[]).filter(a => a.id !== aid);
+      });
+    } else {
+      data.globalAccessories = (data.globalAccessories||[]).filter(a => a.id !== aid);
+    }
+
+    saveData();
+    renderAccessories();
+    if (document.getElementById('tab-accessories')?.classList.contains('active')) renderAccessoriesTab();
+    updateTrashBadge();
+    toast(`🗑 "${acc.name}" dans la corbeille`, '');
+  });
+}
+
+function updateTrashBadge() {
+  const count = (data.trash||[]).length;
+  const btn   = document.getElementById('trash-btn');
+  if (!btn) return;
+  btn.innerHTML = count > 0 ? `🗑 Corbeille <span style="background:var(--danger);color:white;padding:1px 6px;border-radius:10px;font-size:0.7rem;font-weight:800;">${count}</span>` : '🗑 Corbeille';
+}
+
+function restoreFromTrash(trashId) {
+  const item = (data.trash||[]).find(x => x.id === trashId);
+  if (!item) return;
+  const copy = { ...item };
+  delete copy._deletedAt; delete copy._deletedFrom; delete copy._type;
+  if (item._deletedFrom === 'global') {
+    if (!data.globalAccessories) data.globalAccessories = [];
+    data.globalAccessories.push(copy);
+  } else {
+    const proj = data.projects.find(p => p.id === item._deletedFrom);
+    if (proj) { if (!proj.accessories) proj.accessories = []; proj.accessories.push(copy); }
+    else       { if (!data.globalAccessories) data.globalAccessories = []; data.globalAccessories.push(copy); }
   }
+  data.trash = (data.trash||[]).filter(x => x.id !== trashId);
+  saveData(); renderTrashModal(); renderAccessoriesTab(); updateTrashBadge();
+  toast(`♻️ "${item.name}" restauré !`, 'success');
+}
 
-  proj.accessories = (proj.accessories||[]).filter(a => a.id !== aid);
-  saveData();
-  renderAccessories();
-  toast('Accessoire supprimé', 'error');
+function permanentlyDelete(trashId) {
+  const item = (data.trash||[]).find(x => x.id === trashId);
+  if (!item) return;
+  confirmAction(`Supprimer définitivement "<strong>${item.name}</strong>" ? Action irréversible.`, () => {
+    data.trash = (data.trash||[]).filter(x => x.id !== trashId);
+    saveData(); renderTrashModal(); updateTrashBadge();
+    toast('Supprimé définitivement', 'error');
+  });
+}
+
+function emptyTrash() {
+  if (!(data.trash||[]).length) return;
+  confirmAction(`Vider la corbeille (${data.trash.length} élément${data.trash.length>1?'s':''}) ? Action irréversible.`, () => {
+    data.trash = [];
+    saveData(); renderTrashModal(); updateTrashBadge();
+    toast('Corbeille vidée', 'error');
+  });
+}
+
+function openTrashModal() {
+  document.getElementById('modal-trash')?.classList.add('open');
+  renderTrashModal();
+}
+
+function renderTrashModal() {
+  const trash = data.trash || [];
+  const list  = document.getElementById('trash-list');
+  if (!list) return;
+  updateTrashBadge();
+  if (trash.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">✨</div><p>La corbeille est vide</p></div>';
+    return;
+  }
+  list.innerHTML = [...trash].sort((a,b)=>b._deletedAt-a._deletedAt).map(item => {
+    const ago = timeAgo(new Date(item._deletedAt));
+    const src = item._deletedFrom==='global' ? '— Sans projet —'
+              : (data.projects.find(p=>p.id===item._deletedFrom)?.title||'Projet supprimé');
+    return `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg-2);border-radius:var(--radius-md);border:1px solid var(--border);margin-bottom:8px;">
+        ${item.image?`<img src="${item.image}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'">`:'<div style="width:40px;height:40px;border-radius:8px;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem;border:1px solid var(--border);">🎒</div>'}
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:0.88rem;color:var(--text);">${item.name}</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);">📌 ${src} · ${ago}</div>
+          ${item.price?`<div style="font-size:0.75rem;color:var(--danger);font-weight:700;">${parseFloat(item.price).toLocaleString('fr-FR')} €</div>`:''}
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="btn btn-success btn-sm" onclick="restoreFromTrash('${item.id}')">♻️ Restaurer</button>
+          <button class="btn btn-danger btn-sm" onclick="permanentlyDelete('${item.id}')">🗑</button>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function combineAccessoryWithProject(pid, aid) {
@@ -7058,6 +7195,7 @@ function renderAccessories() {
           : `<div class="acc-card-img-placeholder">🎒</div>`}
         <div class="acc-card-body">
           <div class="acc-card-name">${acc.name}</div>
+          ${renderAvailBadge(acc)}
           ${acc.price ? `<div class="acc-card-price">${parseFloat(acc.price).toLocaleString('fr-FR')} €</div>` : ''}
           ${acc.info  ? `<div class="acc-card-info">${acc.info}</div>` : ''}
 
@@ -7661,6 +7799,7 @@ function showAppAfterSplash() {
   initTabReorder();
   updateSbOnline();
   updateSbDrive(driveAuthed ? 'connected' : 'disconnected');
+  updateTrashBadge();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -7999,7 +8138,8 @@ function renderAccessoriesTab() {
 
         <div class="project-body">
           <div class="project-title">${a.name}</div>
-          ${a.price ? `<div style="color:var(--coral);font-weight:800;font-size:1.05rem;margin-bottom:6px;">${price.toLocaleString('fr-FR')} €</div>` : ''}
+          ${renderAvailBadge(a)}
+          ${a.price ? `<div style="color:var(--danger);font-weight:800;font-size:1.05rem;margin-bottom:6px;">${price.toLocaleString('fr-FR')} €</div>` : ''}
 
           ${a.info ? `<p style="font-size:0.83rem;color:var(--text-muted);line-height:1.5;margin-bottom:10px;border-left:3px solid var(--border);padding-left:8px;">${a.info}</p>` : ''}
 
@@ -8007,10 +8147,13 @@ function renderAccessoriesTab() {
 
           <div style="margin-bottom:10px;display:flex;flex-direction:column;gap:4px;">
             <div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">Projet associé</div>
-            <div style="display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="closeGroupDetail();showTab('tab-projects');setBottomNav('bn-projects');setTimeout(()=>openAccessoriesPanel('${a._projId}'),200)">
-              <span style="font-weight:800;color:var(--ocean);font-size:0.85rem;text-decoration:underline;">${a._projTitle}</span>
-              ${grp ? `<span style="background:${getGroupColor(data.groups.indexOf(grp))};color:white;padding:2px 7px;border-radius:8px;font-size:0.7rem;font-weight:700;">${grp.name}</span>` : ''}
-            </div>
+            ${a._projId
+              ? `<div style="display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="closeGroupDetail();showTab('tab-projects');setBottomNav('bn-projects');setTimeout(()=>openAccessoriesPanel('${a._projId}'),200)">
+                  <span style="font-weight:800;color:var(--primary);font-size:0.85rem;text-decoration:underline;">${a._projTitle}</span>
+                  ${grp ? `<span style="background:${getGroupColor(data.groups.indexOf(grp))};color:white;padding:2px 7px;border-radius:8px;font-size:0.7rem;font-weight:700;">${grp.name}</span>` : ''}
+                </div>`
+              : `<span style="font-size:0.82rem;color:var(--text-muted);font-style:italic;">— Sans projet associé —</span>`
+            }
             ${linked ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;">${linked}</div>` : ''}
           </div>
 
@@ -8033,7 +8176,7 @@ function renderAccessoriesTab() {
               : '<span style="color:var(--palm);font-weight:800;font-size:0.82rem;">✅ Validé</span>'
             }
             <button class="btn btn-sm" style="background:#e8f4fd;color:var(--ocean);" onclick="showTab('tab-projects');setBottomNav('bn-projects');setTimeout(()=>openAccessoriesPanel('${a._projId}'),200)">🔗 Ouvrir</button>
-            ${isOwnerOrAdmin(a) ? `<button class="btn btn-danger btn-sm" onclick="removeAccessory('${a._projId}','${a.id}');renderAccessoriesTab()">🗑</button>` : ''}
+            ${isOwnerOrAdmin(a) ? `<button class="btn btn-danger btn-sm" onclick="removeAccessory(${a._projId?`'${a._projId}'`:'null'},'${a.id}')">🗑</button>` : ''}
           </div>
         </div>
       </div>`;
@@ -8200,14 +8343,41 @@ function renderBudgetAllocGauge() {
 }
 
 /* ── ③ Sélecteur accessoires ── */
-function getAllAccUnique() {
+// ── Badge disponibilité ──
+const AVAIL_MAP = {
+  available:   { label: '✅ Disponible',          style: 'background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;' },
+  partial:     { label: '⚠️ Partiellement dispo', style: 'background:#fffbeb;color:#92400e;border:1px solid #fde68a;' },
+  unavailable: { label: '❌ Indisponible',         style: 'background:#fef2f2;color:#991b1b;border:1px solid #fecaca;' },
+  tobuy:       { label: '🛒 À acheter',            style: 'background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;' },
+};
+
+function renderAvailBadge(acc) {
+  const cfg = acc.availability ? AVAIL_MAP[acc.availability] : null;
+  const stockHtml = (acc.stock > 0)
+    ? `<span style="background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:700;">📦 ${acc.stock} en stock</span>`
+    : '';
+  if (!cfg && !stockHtml) return '';
+  return `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
+    ${cfg ? `<span style="${cfg.style}padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:700;">${cfg.label}</span>` : ''}
+    ${stockHtml}
+  </div>`;
+}
+
+
   const all = [];
+  // Accessoires liés aux projets
   data.projects.forEach(p => {
     (p.accessories||[]).forEach(a => {
       if (!all.find(x => x._uid === p.id + a.id)) {
         all.push({ ...a, _projId: p.id, _projTitle: p.title, _uid: p.id + a.id });
       }
     });
+  });
+  // Accessoires globaux (sans projet)
+  (data.globalAccessories||[]).forEach(a => {
+    if (!all.find(x => x._uid === 'global_' + a.id)) {
+      all.push({ ...a, _projId: null, _projTitle: '— Sans projet —', _uid: 'global_' + a.id });
+    }
   });
   return all;
 }
@@ -8361,48 +8531,59 @@ function toggleAccTabForm() {
   form.classList.toggle('expanded', !open);
   if (!open) {
     const sel = document.getElementById('acc-tab-proj-sel');
-    if (sel) sel.innerHTML = '<option value="">Choisir un projet…</option>' +
+    if (sel) sel.innerHTML = '<option value="">— Sans projet associé —</option>' +
       data.projects.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
     setTimeout(() => document.getElementById('acc-tab-name')?.focus(), 100);
   }
 }
 
 function addAccFromTab() {
-  const projId = document.getElementById('acc-tab-proj-sel')?.value;
+  const projId = document.getElementById('acc-tab-proj-sel')?.value || '';
   const name   = document.getElementById('acc-tab-name')?.value.trim();
-  if (!projId) { toast('Choisissez un projet', 'error'); return; }
-  if (!name)   { toast('Nom requis', 'error'); return; }
-
-  const proj = data.projects.find(p => p.id === projId);
-  if (!proj) return;
-  if (!proj.accessories) proj.accessories = [];
+  if (!name) { toast('Nom requis', 'error'); return; }
 
   const indGoal = parseFloat(document.getElementById('acc-tab-indiv-goal')?.value) || 0;
 
-  proj.accessories.push({
+  const newAcc = {
     id:             'acc' + Date.now(),
     name,
     image:          document.getElementById('acc-tab-image')?.value.trim() || '',
     price:          document.getElementById('acc-tab-price')?.value || '',
     individualGoal: indGoal,
     info:           document.getElementById('acc-tab-info')?.value.trim() || '',
+    availability:   document.getElementById('acc-tab-available')?.value || '',
+    stock:          parseInt(document.getElementById('acc-tab-stock')?.value) || 0,
     votes:          [],
     validated:      false,
     linkedProjects: [],
     createdBy:      currentUser.id,
     createdAt:      Date.now()
-  });
+  };
+
+  if (projId) {
+    // Lier à un projet spécifique
+    const proj = data.projects.find(p => p.id === projId);
+    if (!proj) return;
+    if (!proj.accessories) proj.accessories = [];
+    proj.accessories.push(newAcc);
+    toast(`🎒 "${name}" ajouté à "${proj.title}" !`, 'success');
+  } else {
+    // Accessoire global (stocké dans data.globalAccessories)
+    if (!data.globalAccessories) data.globalAccessories = [];
+    data.globalAccessories.push(newAcc);
+    toast(`🎒 Accessoire "${name}" ajouté (sans projet associé)`, 'success');
+  }
 
   saveData();
 
   ['acc-tab-name','acc-tab-image','acc-tab-price','acc-tab-indiv-goal','acc-tab-info']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  const sel = document.getElementById('acc-tab-proj-sel');
-  if (sel) sel.value = '';
+  const sel = document.getElementById('acc-tab-proj-sel'); if (sel) sel.value = '';
+  const avEl = document.getElementById('acc-tab-available'); if(avEl) avEl.value='';
+  const stEl = document.getElementById('acc-tab-stock');     if(stEl) stEl.value='';
 
   toggleAccTabForm();
   renderAccessoriesTab();
-  toast(`🎒 "${name}" ajouté à "${proj.title}" !`, 'success');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -8585,6 +8766,9 @@ document.getElementById('modal-project').addEventListener('click', function(e) {
 });
 document.getElementById('modal-password').addEventListener('click', function(e) {
   if (e.target === this) closeModal('modal-password');
+});
+document.getElementById('modal-trash')?.addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-trash');
 });
 </script>
 </body>
