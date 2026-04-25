@@ -2819,6 +2819,7 @@ header {
           </div>
           <div style="display:flex;gap:10px;margin-top:15px;">
             <button class="btn btn-success" style="flex:1" onclick="addAccFromTab()">✅ Ajouter</button>
+            <button class="btn btn-sm" style="background:#e8f4fd;color:var(--ocean);" onclick="openAccExistTabPicker()">📋 Existants</button>
             <button class="btn" style="background:#eee;color:#333;" onclick="toggleAccTabForm()">Annuler</button>
           </div>
         </div>
@@ -3187,34 +3188,56 @@ header {
         <span id="acc-form-arrow" style="font-size:1.2rem;transition:transform 0.2s;">▼</span>
       </div>
       <div id="acc-form-fields" style="display:none;margin-top:16px;">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Nom de l'accessoire *</label>
-            <input type="text" id="acc-name" placeholder="Ex: Parasol, Glacière...">
+
+        <!-- Onglets Nouveau / Existant -->
+        <div style="display:flex;gap:6px;background:var(--bg);border-radius:10px;padding:4px;margin-bottom:14px;">
+          <button id="acc-tab-new" class="btn btn-primary btn-sm" style="flex:1;" onclick="switchAccMode('new')">✏️ Nouveau</button>
+          <button id="acc-tab-exist" class="btn btn-sm" style="flex:1;background:transparent;color:var(--text-muted);" onclick="switchAccMode('exist')">📋 Choisir un existant</button>
+        </div>
+
+        <!-- Mode Nouveau -->
+        <div id="acc-mode-new">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nom de l'accessoire *</label>
+              <input type="text" id="acc-name" placeholder="Ex: Parasol, Glacière...">
+            </div>
+            <div class="form-group">
+              <label>Prix (€)</label>
+              <input type="number" id="acc-price" placeholder="25">
+            </div>
+            <div class="form-group full">
+              <label>Image (URL lien web)</label>
+              <input type="url" id="acc-image" placeholder="https://... lien image">
+            </div>
+            <div class="form-group full">
+              <label>Infos / description</label>
+              <textarea id="acc-info" rows="2" placeholder="Couleur, taille, marque, où acheter..."></textarea>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Prix (€)</label>
-            <input type="number" id="acc-price" placeholder="25">
+          <div style="margin-top:14px;">
+            <label style="font-weight:700;font-size:0.85rem;color:var(--ocean-deep);display:block;margin-bottom:6px;">Combiner avec d'autres projets</label>
+            <select id="acc-combine-select" class="combine-select" multiple size="3"></select>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Ctrl+clic pour plusieurs projets</p>
           </div>
-          <div class="form-group full">
-            <label>Image (URL lien web)</label>
-            <input type="url" id="acc-image" placeholder="https://... lien image">
-          </div>
-          <div class="form-group full">
-            <label>Infos / description</label>
-            <textarea id="acc-info" rows="2" placeholder="Couleur, taille, marque, où acheter..."></textarea>
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="btn btn-success" style="flex:1" onclick="addAccessory()">✅ Ajouter</button>
+            <button class="btn" style="background:#eee;color:#333;" onclick="toggleAccForm()">Annuler</button>
           </div>
         </div>
-        <div style="margin-top:14px;">
-          <label style="font-weight:700;font-size:0.85rem;color:var(--ocean-deep);display:block;margin-bottom:6px;">Combiner avec d'autres projets</label>
-          <select id="acc-combine-select" class="combine-select" multiple size="3">
-          </select>
-          <p style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Ctrl+clic pour sélectionner plusieurs projets</p>
+
+        <!-- Mode Existant -->
+        <div id="acc-mode-exist" style="display:none;">
+          <div style="margin-bottom:10px;">
+            <input type="text" id="acc-exist-search" placeholder="🔍 Rechercher dans les accessoires existants…"
+              oninput="renderAccExistPicker()"
+              style="width:100%;padding:9px 13px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:'Nunito',sans-serif;">
+          </div>
+          <div id="acc-exist-list" style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+          <p style="font-size:0.72rem;color:var(--text-muted);margin-top:8px;">Cliquer sur un accessoire pour l'importer dans ce projet (une copie indépendante sera créée).</p>
+          <button class="btn" style="background:#eee;color:#333;width:100%;margin-top:10px;" onclick="toggleAccForm()">Annuler</button>
         </div>
-        <div style="display:flex;gap:10px;margin-top:16px;">
-          <button class="btn btn-success" style="flex:1" onclick="addAccessory()">✅ Ajouter l'accessoire</button>
-          <button class="btn" style="background:#eee;color:#333;" onclick="toggleAccForm()">Annuler</button>
-        </div>
+
       </div>
     </div>
 
@@ -3229,6 +3252,26 @@ header {
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- MODAL ACCESSOIRES EXISTANTS (depuis onglet) -->
+<div class="modal-overlay" id="modal-acc-exist-tab">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">📋 Importer un accessoire existant</div>
+      <button class="modal-close" onclick="closeModal('modal-acc-exist-tab')">✕</button>
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label style="font-weight:700;font-size:0.85rem;color:var(--ocean-deep);display:block;margin-bottom:6px;">Projet de destination</label>
+      <select id="acc-exist-tab-dest" style="width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:0.9rem;">
+        <option value="">Choisir un projet…</option>
+      </select>
+    </div>
+    <input type="text" id="acc-exist-tab-search" placeholder="🔍 Rechercher…"
+      oninput="renderAccExistTabList()"
+      style="width:100%;padding:9px 13px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:'Nunito',sans-serif;margin-bottom:12px;box-sizing:border-box;">
+    <div id="acc-exist-tab-list" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
   </div>
 </div>
 
@@ -6406,7 +6449,183 @@ function unlinkAccessory(pid, aid, targetId) {
 // Overlay accessoires
 document.getElementById('acc-overlay').addEventListener('click', closeAccessoriesPanel);
 
-// ─── Modifier un groupe ───
+// ─── Sélecteur d'accessoires existants ───
+
+function switchAccMode(mode) {
+  const btnNew   = document.getElementById('acc-tab-new');
+  const btnExist = document.getElementById('acc-tab-exist');
+  const modeNew  = document.getElementById('acc-mode-new');
+  const modeEx   = document.getElementById('acc-mode-exist');
+  if (!btnNew) return;
+
+  const isNew = mode === 'new';
+  btnNew.className   = isNew ? 'btn btn-primary btn-sm' : 'btn btn-sm';
+  btnNew.style.cssText   = isNew ? 'flex:1;' : 'flex:1;background:transparent;color:var(--text-muted);';
+  btnExist.className = !isNew ? 'btn btn-primary btn-sm' : 'btn btn-sm';
+  btnExist.style.cssText = !isNew ? 'flex:1;' : 'flex:1;background:transparent;color:var(--text-muted);';
+  if (modeNew)  modeNew.style.display  = isNew  ? 'block' : 'none';
+  if (modeEx)   modeEx.style.display   = !isNew ? 'block' : 'none';
+  if (!isNew) renderAccExistPicker();
+}
+
+/** Rendu du picker inline dans le panneau projet */
+function renderAccExistPicker() {
+  const container = document.getElementById('acc-exist-list');
+  if (!container || !currentAccProjectId) return;
+
+  const search = (document.getElementById('acc-exist-search')?.value || '').toLowerCase();
+  const all    = getAllAccUnique();
+  // Exclure ceux déjà présents dans le projet courant
+  const proj   = data.projects.find(p => p.id === currentAccProjectId);
+  const existIds = new Set((proj?.accessories||[]).map(a => a.id));
+
+  let candidates = all.filter(a =>
+    a._projId !== currentAccProjectId &&
+    !existIds.has(a.id) &&
+    (!search || a.name.toLowerCase().includes(search) || a._projTitle.toLowerCase().includes(search))
+  );
+
+  if (candidates.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem;">Aucun accessoire disponible dans les autres projets.</div>';
+    return;
+  }
+
+  container.innerHTML = candidates.map(a => accExistRow(a, (uid) => importExistingAccToPanel(uid))).join('');
+}
+
+/** Rendu d'une ligne d'accessoire existant (réutilisable) */
+function accExistRow(a, onImport) {
+  const uid  = a._uid || (a._projId + a.id);
+  const fn   = `(${onImport.toString()})('${uid}')`;
+  const votes = (a.votes||[]).length;
+  const threshold = data.validationThreshold || 2;
+  return `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:white;border-radius:10px;border:2px solid var(--border);cursor:pointer;transition:all 0.15s;"
+      onclick="${fn}" onmouseover="this.style.borderColor='var(--ocean)';this.style.background='var(--foam)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.background='white'">
+      ${a.image
+        ? `<img src="${a.image}" style="width:38px;height:38px;border-radius:8px;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'">`
+        : `<div style="width:38px;height:38px;border-radius:8px;background:var(--foam);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">🎒</div>`}
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:800;font-size:0.88rem;color:var(--ocean-deep);">${a.name} ${a.validated?'✅':''}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);">📌 ${a._projTitle} · ${votes}/${threshold} votes</div>
+        ${a.info ? `<div style="font-size:0.72rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.info}</div>` : ''}
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        ${a.price ? `<div style="font-weight:800;color:var(--coral);font-size:0.9rem;">${parseFloat(a.price).toLocaleString('fr-FR')} €</div>` : ''}
+        <div style="font-size:0.7rem;color:var(--ocean);font-weight:700;margin-top:2px;">Importer →</div>
+      </div>
+    </div>`;
+}
+
+/** Importe un accessoire existant dans le projet actuellement ouvert dans le panneau */
+function importExistingAccToPanel(uid) {
+  const all    = getAllAccUnique();
+  const source = all.find(a => (a._projId + a.id) === uid || a._uid === uid);
+  if (!source || !currentAccProjectId) return;
+
+  const proj = data.projects.find(p => p.id === currentAccProjectId);
+  if (!proj) return;
+  if (!proj.accessories) proj.accessories = [];
+
+  // Copie indépendante (nouvel ID)
+  const copy = {
+    ...source,
+    id:             'acc' + Date.now(),
+    votes:          [],
+    validated:      false,
+    linkedProjects: [source._projId],
+    createdBy:      currentUser.id,
+    createdAt:      Date.now(),
+    importedFrom:   source._projId,
+    importedAccId:  source.id
+  };
+  delete copy._projId; delete copy._projTitle; delete copy._uid;
+
+  proj.accessories.push(copy);
+  saveData();
+
+  // Fermer le formulaire et rafraîchir
+  toggleAccForm();
+  renderAccessories();
+  renderAccessoriesTab();
+  toast(`🎒 "${source.name}" importé depuis "${source._projTitle}" !`, 'success');
+}
+
+/** Ouvre la modale de picker depuis l'onglet Accessoires */
+function openAccExistTabPicker() {
+  const sel = document.getElementById('acc-exist-tab-dest');
+  if (sel) {
+    sel.innerHTML = '<option value="">Choisir un projet…</option>' +
+      data.projects.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
+  }
+  document.getElementById('acc-exist-tab-search').value = '';
+  renderAccExistTabList();
+  document.getElementById('modal-acc-exist-tab').classList.add('open');
+}
+
+function renderAccExistTabList() {
+  const container = document.getElementById('acc-exist-tab-list');
+  if (!container) return;
+  const destId = document.getElementById('acc-exist-tab-dest')?.value || '';
+  const search  = (document.getElementById('acc-exist-tab-search')?.value || '').toLowerCase();
+  const all     = getAllAccUnique();
+
+  // Si destination choisie : exclure les déjà présents
+  const destProj = destId ? data.projects.find(p => p.id === destId) : null;
+  const existIds = new Set(destId ? (destProj?.accessories||[]).map(a => a.id) : []);
+
+  let candidates = all.filter(a =>
+    (!destId || a._projId !== destId) &&
+    !existIds.has(a.id) &&
+    (!search || a.name.toLowerCase().includes(search) || a._projTitle.toLowerCase().includes(search))
+  );
+
+  if (candidates.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem;">Aucun accessoire disponible.</div>';
+    return;
+  }
+
+  container.innerHTML = candidates.map(a => accExistRow(a, (uid) => importAccFromTabModal(uid))).join('');
+}
+
+function importAccFromTabModal(uid) {
+  const destId = document.getElementById('acc-exist-tab-dest')?.value;
+  if (!destId) { toast('Choisissez un projet de destination', 'error'); return; }
+
+  const all    = getAllAccUnique();
+  const source = all.find(a => (a._projId + a.id) === uid || a._uid === uid);
+  if (!source) return;
+
+  const proj = data.projects.find(p => p.id === destId);
+  if (!proj) return;
+  if (!proj.accessories) proj.accessories = [];
+
+  const copy = {
+    ...source,
+    id:             'acc' + Date.now(),
+    votes:          [],
+    validated:      false,
+    linkedProjects: [source._projId],
+    createdBy:      currentUser.id,
+    createdAt:      Date.now(),
+    importedFrom:   source._projId,
+    importedAccId:  source.id
+  };
+  delete copy._projId; delete copy._projTitle; delete copy._uid;
+
+  proj.accessories.push(copy);
+  saveData();
+  closeModal('modal-acc-exist-tab');
+  renderAccessoriesTab();
+  toast(`🎒 "${source.name}" importé dans "${proj.title}" !`, 'success');
+}
+
+// Fermer modal acc-exist-tab sur overlay click
+document.addEventListener('DOMContentLoaded', () => {
+  const m = document.getElementById('modal-acc-exist-tab');
+  if (m) m.addEventListener('click', e => { if (e.target === m) closeModal('modal-acc-exist-tab'); });
+});
 function openEditGroup(gid) {
   const g = data.groups.find(x => x.id === gid);
   if (!g) return;
