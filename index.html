@@ -4572,22 +4572,23 @@ function setGroupStatus(gid, status) {
   const g = data.groups.find(gr => gr.id === gid);
   if (g) {
     g.status = status;
+    if (status === 'validated') g.validatedAt = Date.now();
     saveData();
-    driveAutoBackup('vote');  // ← sauvegarde auto à chaque validation groupe
-    renderGroups();
-    renderDashboard();
+    driveAutoBackup('vote');
+    renderGroups(); renderDashboard();
     toast(status === 'validated' ? '✅ Groupe validé !' : '❌ Groupe rejeté', status === 'validated' ? 'success' : 'error');
   }
 }
 
 function deleteGroup(gid) {
-  data.groups = data.groups.filter(g => g.id !== gid);
-  data.projects = data.projects.filter(p => p.groupId !== gid);
-  saveData();
-  renderGroups();
-  renderDashboard();
-  updateGroupSelects();
-  toast('Groupe supprimé', 'error');
+  const g = data.groups.find(x => x.id === gid);
+  if (!g) return;
+  confirmAction(`Supprimer le groupe "<strong>${g.name}</strong>" et tous ses projets ?`, () => {
+    data.groups   = data.groups.filter(x => x.id !== gid);
+    data.projects = data.projects.filter(p => p.groupId !== gid);
+    saveData(); renderGroups(); renderDashboard(); updateGroupSelects();
+    toast('Groupe supprimé', 'error');
+  });
 }
 
 function renderGroups() {
@@ -4764,29 +4765,30 @@ function saveProject() {
 }
 
 function deleteProject(pid) {
-  if (data.finalProjectId === pid) data.finalProjectId = null;
-  data.projects = data.projects.filter(p => p.id !== pid);
-  saveData();
-  renderProjects();
-  renderDashboard();
-  toast('Projet supprimé', 'error');
+  const p = data.projects.find(x => x.id === pid);
+  if (!p) return;
+  confirmAction(`Supprimer le projet "<strong>${p.title}</strong>" ?`, () => {
+    if (data.finalProjectId === pid) data.finalProjectId = null;
+    data.projects = data.projects.filter(x => x.id !== pid);
+    saveData(); renderProjects(); renderDashboard();
+    toast('Projet supprimé', 'error');
+  });
 }
 
 function setFinalProject(pid) {
-  data.finalProjectId = data.finalProjectId === pid ? null : pid;
-  saveData();
-  renderProjects();
-  renderDashboard();
-  toast(data.finalProjectId === pid ? '' : data.finalProjectId ? '⭐ Choix final défini !' : '⭐ Choix final annulé', 'success');
-  if (data.finalProjectId) toast('⭐ Choix final défini !', 'success');
+  const wasFinal = data.finalProjectId === pid;
+  data.finalProjectId = wasFinal ? null : pid;
+  saveData(); renderProjects(); renderDashboard();
+  toast(wasFinal ? 'Choix final annulé' : '⭐ Choix final défini !', wasFinal ? '' : 'success');
 }
 
 function renderProjects() {
   const container = document.getElementById('projects-grid');
-  const search = (document.getElementById('filter-search').value || '').toLowerCase();
-  const filterGroup = document.getElementById('filter-group').value;
-  const filterBudget = parseFloat(document.getElementById('filter-budget').value) || Infinity;
-  const filterRating = parseFloat(document.getElementById('filter-rating').value) || 0;
+  if (!container) return;
+  const search      = (document.getElementById('filter-search')?.value || '').toLowerCase();
+  const filterGroup = document.getElementById('filter-group')?.value || '';
+  const filterBudget = parseFloat(document.getElementById('filter-budget')?.value) || Infinity;
+  const filterRating = parseFloat(document.getElementById('filter-rating')?.value) || 0;
 
   let projs = data.projects.filter(p => {
     const matchSearch = !search || p.title.toLowerCase().includes(search) ||
@@ -4871,67 +4873,53 @@ function renderProjects() {
 //  BUDGET
 // ═══════════════════════════════════════════════════════
 function renderBudget() {
-  const totalInput = parseFloat(document.getElementById('budget-total-input').value) || 0;
-  const filterGroup = document.getElementById('budget-filter-group').value;
-  const sortBy = document.getElementById('budget-sort').value;
+  const filterGroup = (document.getElementById('budget-filter-group')?.value) || '';
+  const sortBy      = (document.getElementById('budget-sort')?.value) || 'price-asc';
 
   let projs = [...data.projects];
   if (filterGroup) projs = projs.filter(p => p.groupId === filterGroup);
 
   projs.sort((a, b) => {
-    if (sortBy === 'price-asc') return (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0);
-    if (sortBy === 'price-desc') return (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0);
-    if (sortBy === 'rating-desc') return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
+    if (sortBy === 'price-asc')   return (parseFloat(a.price)||0) - (parseFloat(b.price)||0);
+    if (sortBy === 'price-desc')  return (parseFloat(b.price)||0) - (parseFloat(a.price)||0);
+    if (sortBy === 'rating-desc') return (parseFloat(b.rating)||0) - (parseFloat(a.rating)||0);
     return 0;
   });
 
-  const totalCost = projs.reduce((s, p) => s + (parseFloat(p.price) || 0), 0);
-
-  // Jauge
-  const gauge = document.getElementById('budget-gauge');
-  if (totalInput > 0) {
-    gauge.style.display = 'block';
-    const pct = Math.min(100, (totalCost / totalInput) * 100);
-    const color = pct > 100 ? 'var(--coral)' : pct > 80 ? 'var(--sand)' : 'var(--palm)';
-    gauge.innerHTML = `
-      <div style="display:flex;justify-content:space-between;font-size:0.85rem;font-weight:700;margin-bottom:8px;">
-        <span>Budget utilisé : <strong style="color:${color}">${totalCost.toLocaleString('fr-FR')} €</strong></span>
-        <span>Disponible : <strong>${(totalInput - totalCost).toLocaleString('fr-FR')} €</strong> / ${totalInput.toLocaleString('fr-FR')} €</span>
-      </div>
-      <div style="background:var(--border);border-radius:10px;height:18px;overflow:hidden;">
-        <div style="background:${color};width:${pct}%;height:100%;border-radius:10px;transition:width 0.5s;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;">
-          <span style="color:white;font-size:0.75rem;font-weight:800;">${Math.round(pct)}%</span>
-        </div>
-      </div>
-    `;
-  } else {
-    gauge.style.display = 'none';
+  // Mettre à jour le select de groupe
+  const fgEl = document.getElementById('budget-filter-group');
+  if (fgEl) {
+    const cur = fgEl.value;
+    fgEl.innerHTML = '<option value="">Tous</option>' +
+      data.groups.map(g => `<option value="${g.id}" ${cur===g.id?'selected':''}>${g.name}</option>`).join('');
+    fgEl.value = cur;
   }
 
   // Tableau
   const tbody = document.getElementById('budget-tbody');
+  if (!tbody) return;
+
   if (projs.length === 0) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:30px;">Aucun projet</td></tr>';
     return;
   }
 
   tbody.innerHTML = projs.map(p => {
-    const group = data.groups.find(g => g.id === p.groupId);
+    const group   = data.groups.find(g => g.id === p.groupId);
     const isFinal = data.finalProjectId === p.id;
-    const equipStr = p.equipment && p.equipment.length > 0
-      ? p.equipment.slice(0, 4).map(eq => { const c = EQUIPMENT_CATALOG.find(x => x.label === eq); return c ? c.icon : ''; }).join(' ') + (p.equipment.length > 4 ? ` +${p.equipment.length - 4}` : '')
+    const equipStr = p.equipment?.length
+      ? p.equipment.slice(0,4).map(eq => EQUIPMENT_CATALOG.find(x=>x.label===eq)?.icon||'').join(' ') + (p.equipment.length>4?` +${p.equipment.length-4}`:'')
       : '—';
-
+    const valStatus = getProjectValidation(p);
     return `
-      <tr ${isFinal ? 'style="background:#fffdf5;"' : ''}>
-        <td><strong>${isFinal ? '⭐ ' : ''}${p.title}</strong></td>
-        <td>${group ? `<span class="project-group-badge" style="background:${getGroupColor(group.id)};font-size:0.78rem">${group.name}</span>` : '—'}</td>
-        <td style="font-weight:800;color:var(--coral);">${p.price ? parseFloat(p.price).toLocaleString('fr-FR') + ' €' : '—'}</td>
-        <td style="color:var(--sand);font-weight:700;">${p.rating ? p.rating + '/5 ⭐' : '—'}</td>
-        <td style="font-size:1.1rem;">${equipStr}</td>
-        <td>${isFinal ? '<span class="status-badge status-validated">⭐ Choix final</span>' : getProjectValidation(p) === 'validated' ? '<span class="status-badge status-validated">✅ Validé</span>' : `<span class="status-badge status-pending">🗳 ${(p.votes||[]).length}/${data.validationThreshold||2} votes</span>`}</td>
-      </tr>
-    `;
+      <tr ${isFinal?'style="background:#fffbeb;"':''}>
+        <td><strong>${isFinal?'⭐ ':''}${p.title}</strong></td>
+        <td>${group?`<span class="project-group-badge" style="background:${getGroupColor(group.id)};font-size:0.75rem">${group.name}</span>`:'—'}</td>
+        <td style="font-weight:800;color:var(--danger);">${p.price?parseFloat(p.price).toLocaleString('fr-FR')+' €':'—'}</td>
+        <td style="color:var(--accent-dark);font-weight:700;">${p.rating?p.rating+'/5 ⭐':'—'}</td>
+        <td style="font-size:1rem;">${equipStr}</td>
+        <td>${isFinal?'<span class="status-badge status-validated">⭐ Final</span>':valStatus==='validated'?'<span class="status-badge status-validated">✅ Validé</span>':`<span class="status-badge status-pending">🗳 ${(p.votes||[]).length}/${data.validationThreshold||2}</span>`}</td>
+      </tr>`;
   }).join('');
 }
 
@@ -4969,7 +4957,7 @@ function addProfile() {
     <div style="background:var(--foam);padding:15px;border-radius:12px;border:2px solid var(--ocean);">
       <p style="font-weight:700;color:var(--ocean-deep);margin-bottom:8px;">✅ Profil créé : <strong>${name}</strong></p>
       <p style="font-size:0.9rem;color:var(--text-muted);">Code d'accès :</p>
-      <div class="code-display">${code}</div>
+      <div class="code-display" onclick="copyToClipboard('${code}','Code d\\'accès')" title="Cliquer pour copier" style="cursor:pointer;user-select:all;">${code} 📋</div>
       <p style="font-size:0.8rem;color:var(--text-muted);">Communiquez ce code à ${name}</p>
     </div>
   `;
@@ -4982,10 +4970,13 @@ function addProfile() {
 
 function deleteProfile(pid) {
   if (pid === currentUser.id) { toast('Impossible de supprimer votre propre profil !', 'error'); return; }
-  data.profiles = data.profiles.filter(p => p.id !== pid);
-  saveData();
-  renderProfiles();
-  toast('Profil supprimé', 'error');
+  const p = data.profiles.find(x => x.id === pid);
+  if (!p) return;
+  confirmAction(`Supprimer le profil "<strong>${p.name}</strong>" ?`, () => {
+    data.profiles = data.profiles.filter(x => x.id !== pid);
+    saveData(); renderProfiles();
+    toast('Profil supprimé', 'error');
+  });
 }
 
 function renderProfiles() {
@@ -4995,7 +4986,7 @@ function renderProfiles() {
       <div class="profile-avatar" style="background:${p.color}">${p.name[0].toUpperCase()}</div>
       <div class="profile-details">
         <div class="profile-name">${p.name}</div>
-        <div class="profile-code">🔑 ${p.code}</div>
+        <div class="profile-code" onclick="copyToClipboard('${p.code}','Code ${p.name}')" title="Cliquer pour copier" style="cursor:pointer;">🔑 ${p.code} 📋</div>
         <span class="profile-role ${p.role === 'admin' ? 'role-admin' : 'role-member'}">${p.role === 'admin' ? '👑 Admin' : '👤 Membre'}</span>
       </div>
       <div class="profile-actions">
@@ -5020,10 +5011,39 @@ function updateGroupSelects() {
   selIds.forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
+    const cur = sel.value;
     sel.innerHTML = '<option value="">Tous les groupes</option>' +
-      data.groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+      data.groups.map(g => `<option value="${g.id}" ${cur===g.id?'selected':''}>${g.name}</option>`).join('');
+    sel.value = cur;
   });
 }
+
+// ── Amélioration : raccourcis clavier globaux ──
+document.addEventListener('keydown', e => {
+  if (!currentUser) return;
+  // Escape → fermer modals / chat
+  if (e.key === 'Escape') {
+    if (document.querySelector('.modal-overlay.open')) {
+      document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+      return;
+    }
+    if (document.getElementById('chat-panel')?.classList.contains('open')) {
+      closeChat(); return;
+    }
+    if (document.getElementById('group-detail-panel')?.classList.contains('open')) {
+      closeGroupDetail(); return;
+    }
+    if (document.getElementById('acc-panel')?.classList.contains('open')) {
+      closeAccessoriesPanel(); return;
+    }
+  }
+  // Alt + chiffres → navigation rapide
+  if (e.altKey && !e.ctrlKey && !e.metaKey) {
+    const map = { '1':'tab-dashboard','2':'tab-groups','3':'tab-projects','4':'tab-budget','5':'tab-accessories','6':'tab-inbox' };
+    if (map[e.key]) { e.preventDefault(); showTab(map[e.key]); }
+  }
+});
+
 
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
@@ -5418,8 +5438,35 @@ function openChatOnTopic(topicId) {
 }
 
 // ═══════════════════════════════════════════════════════
-//  MÉMORISER / MOT DE PASSE
+//  UTILITAIRES GLOBAUX
 // ═══════════════════════════════════════════════════════
+
+/** Confirmation modale légère (remplace window.confirm) */
+function confirmAction(msg, onConfirm) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:9998;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);';
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:16px;padding:28px 28px 22px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;">
+      <div style="font-size:1.8rem;margin-bottom:12px;">⚠️</div>
+      <p style="font-weight:700;font-size:0.95rem;color:#111827;margin-bottom:20px;line-height:1.5;">${msg}</p>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button id="_conf_ok"  style="padding:10px 24px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:700;font-size:0.9rem;cursor:pointer;font-family:inherit;">Confirmer</button>
+        <button id="_conf_no"  style="padding:10px 24px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-weight:700;font-size:0.9rem;cursor:pointer;font-family:inherit;">Annuler</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_conf_ok').onclick = () => { document.body.removeChild(overlay); onConfirm(); };
+  overlay.querySelector('#_conf_no').onclick = () => document.body.removeChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) document.body.removeChild(overlay); };
+}
+
+/** Copie du texte dans le presse-papier */
+function copyToClipboard(text, label) {
+  navigator.clipboard?.writeText(text).then(() => toast(`📋 ${label||'Copié'} !`, 'success'))
+    .catch(() => { const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); toast(`📋 ${label||'Copié'} !`, 'success'); });
+}
+
+
 
 const REMEMBER_KEY = 'projetPlage_saved';
 
@@ -8369,6 +8416,8 @@ function initTabReorder() {
   const bar = document.getElementById('nav-tabs-bar');
   const btn = document.getElementById('tabs-reorder-btn');
   if (!bar || !btn) return;
+  if (bar.dataset.reorderInit) { restoreTabOrder(); return; } // déjà initialisé
+  bar.dataset.reorderInit = '1';
 
   // Restaurer l'ordre sauvegardé
   restoreTabOrder();
