@@ -3726,8 +3726,8 @@ header {
     <!-- Formulaire ajout -->
     <div class="acc-add-form" id="acc-add-form">
       <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleAccForm()">
-        <div style="font-weight:800;color:var(--ocean-deep);font-size:0.95rem;">➕ Ajouter un accessoire</div>
-        <span id="acc-form-arrow" style="font-size:1.2rem;transition:transform 0.2s;">▼</span>
+        <div style="font-weight:800;color:var(--primary);font-size:0.92rem;">➕ Ajouter un accessoire</div>
+        <span id="acc-form-arrow" style="font-size:1.1rem;transition:transform 0.2s;color:var(--text-muted);">▼</span>
       </div>
       <div id="acc-form-fields" style="display:none;margin-top:16px;">
 
@@ -3798,7 +3798,22 @@ header {
     </div>
 
     <!-- Résumé budget accessoires -->
-    <div id="acc-budget-summary" style="display:none;background:white;border-radius:12px;padding:12px 16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;gap:15px;flex-wrap:wrap;"></div>
+    <div id="acc-budget-summary" style="display:none;"></div>
+
+    <!-- Barre recherche + filtre -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
+      <input type="text" id="acc-search" placeholder="🔍 Rechercher…"
+        oninput="renderAccessories()"
+        style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.85rem;font-family:'Plus Jakarta Sans',sans-serif;outline:none;"
+        onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+      <select id="acc-filter-status" onchange="renderAccessories()"
+        style="padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.82rem;font-family:'Plus Jakarta Sans',sans-serif;background:white;">
+        <option value="">Tous</option>
+        <option value="pending">⏳ En attente</option>
+        <option value="validated">✅ Validés</option>
+        <option value="available">📦 Disponibles</option>
+      </select>
+    </div>
 
     <!-- Grille accessoires -->
     <div class="acc-grid" id="acc-grid">
@@ -6869,8 +6884,23 @@ function addAccessory() {
   const stEl = document.getElementById('acc-stock');     if(stEl) stEl.value='';
   Array.from(sel.options).forEach(o => o.selected = false);
 
+  // Fermer le formulaire
+  const fields = document.getElementById('acc-form-fields');
+  const arrow  = document.getElementById('acc-form-arrow');
+  const form   = document.getElementById('acc-add-form');
+  if (fields) fields.style.display = 'none';
+  if (arrow)  arrow.style.transform = '';
+  if (form)   form.classList.remove('expanded');
+
   renderAccessories();
-  toast(`🎒 Accessoire "${name}" ajouté !`, 'success');
+
+  // Scroll vers le nouvel accessoire
+  setTimeout(() => {
+    const newCard = document.getElementById('acc-card-' + acc.id);
+    if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 100);
+
+  toast(`🎒 "${name}" ajouté !`, 'success');
 }
 
 function voteAccessory(pid, aid) {
@@ -7051,91 +7081,100 @@ function combineAccessoryWithProject(pid, aid) {
 }
 
 function renderAccessories() {
-  const pid  = currentAccProjectId;
-  const proj = data.projects.find(p => p.id === pid);
+  const pid    = currentAccProjectId;
+  const proj   = data.projects.find(p => p.id === pid);
   if (!proj) return;
 
-  const accs      = proj.accessories || [];
-  const threshold = data.validationThreshold || 2;
-  const grid      = document.getElementById('acc-grid');
-  const summary   = document.getElementById('acc-budget-summary');
+  const search     = (document.getElementById('acc-search')?.value || '').toLowerCase();
+  const filterSt   = document.getElementById('acc-filter-status')?.value || '';
+  const threshold  = data.validationThreshold || 2;
+  const grid       = document.getElementById('acc-grid');
+  const summary    = document.getElementById('acc-budget-summary');
 
-  // Budget summary
-  const total     = accs.reduce((s,a) => s + (parseFloat(a.price)||0), 0);
-  const validated = accs.filter(a => a.validated).length;
-  const validBudget = accs.filter(a=>a.validated).reduce((s,a) => s + (parseFloat(a.price)||0), 0);
+  let accs = proj.accessories || [];
 
-  if (accs.length > 0) {
-    summary.style.display = 'flex';
-    summary.innerHTML = `
-      <div style="text-align:center;flex:1;min-width:80px;">
-        <div style="font-size:1.4rem;font-weight:800;color:var(--ocean);">${accs.length}</div>
-        <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;">Total</div>
-      </div>
-      <div style="text-align:center;flex:1;min-width:80px;">
-        <div style="font-size:1.4rem;font-weight:800;color:var(--palm);">${validated}</div>
-        <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;">Validés ✅</div>
-      </div>
-      <div style="text-align:center;flex:1;min-width:80px;">
-        <div style="font-size:1.4rem;font-weight:800;color:var(--coral);">${total > 0 ? total.toLocaleString('fr-FR')+' €' : '—'}</div>
-        <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;">Budget total</div>
-      </div>
-      <div style="text-align:center;flex:1;min-width:80px;">
-        <div style="font-size:1.4rem;font-weight:800;color:var(--sand);">${validBudget > 0 ? validBudget.toLocaleString('fr-FR')+' €' : '—'}</div>
-        <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;">Budget validé</div>
-      </div>
-    `;
-  } else {
+  // Budget summary (sur tous les accessoires, pas filtrés)
+  const totalBudget  = accs.reduce((s,a) => s + (parseFloat(a.price)||0), 0);
+  const validatedCount = accs.filter(a => a.validated).length;
+  const validBudget  = accs.filter(a=>a.validated).reduce((s,a) => s + (parseFloat(a.price)||0), 0);
+
+  if (accs.length > 0 && summary) {
+    summary.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;background:white;border-radius:var(--radius-md);padding:12px 16px;margin-bottom:14px;box-shadow:var(--shadow-sm);border:1px solid var(--border);';
+    summary.innerHTML = [
+      { label: `${accs.length} total`, val: '', color: 'var(--primary)', icon: '🎒' },
+      { label: 'Validés', val: validatedCount, color: 'var(--success)', icon: '✅' },
+      { label: 'Budget', val: totalBudget > 0 ? totalBudget.toLocaleString('fr-FR')+' €' : '—', color: 'var(--danger)', icon: '💰' },
+      { label: 'Validé €', val: validBudget > 0 ? validBudget.toLocaleString('fr-FR')+' €' : '—', color: 'var(--accent-dark)', icon: '🏆' },
+    ].map(s => `
+      <div style="text-align:center;flex:1;min-width:64px;">
+        <div style="font-size:0.7rem;color:var(--text-muted);font-weight:600;margin-bottom:2px;">${s.icon} ${s.label}</div>
+        <div style="font-size:1rem;font-weight:800;color:${s.color};">${s.val || accs.length}</div>
+      </div>`).join('');
+  } else if (summary) {
     summary.style.display = 'none';
   }
 
+  // Appliquer filtres
+  if (search) accs = accs.filter(a =>
+    a.name.toLowerCase().includes(search) ||
+    (a.info||'').toLowerCase().includes(search)
+  );
+  if (filterSt === 'pending')    accs = accs.filter(a => !a.validated);
+  if (filterSt === 'validated')  accs = accs.filter(a => a.validated);
+  if (filterSt === 'available')  accs = accs.filter(a => a.availability === 'available' || (a.stock||0) > 0);
+
+  if (!grid) return;
+
   if (accs.length === 0) {
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🎒</div><p>Aucun accessoire encore.<br>Ajoutez votre premier !</p></div>';
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">${search||filterSt?'🔍':'🎒'}</div><p>${search||filterSt?'Aucun résultat':'Ajoutez votre premier accessoire !'}</p></div>`;
     return;
   }
 
-  const otherProjects = data.projects.filter(p => p.id !== pid);
+  const otherProjects  = data.projects.filter(p => p.id !== pid);
   const isOwnerOrAdmin = a => currentUser && (currentUser.id === a.createdBy || currentUser.role === 'admin');
 
-  // Trier : validés en haut, puis par votes décroissants
+  // Trier : validés en haut, puis votes décroissants
   const sorted = [...accs].sort((a, b) => {
     if (a.validated && !b.validated) return -1;
-    if (!a.validated && b.validated)  return 1;
+    if (!a.validated && b.validated) return 1;
     return (b.votes||[]).length - (a.votes||[]).length;
   });
 
   grid.innerHTML = sorted.map(acc => {
-    const votes   = acc.votes || [];
-    const pct     = Math.min(100, (votes.length / threshold) * 100);
-    const fillCls = acc.validated ? 'acc-vote-fill-v' : 'acc-vote-fill-p';
-    const hasVote = votes.includes(currentUser.id);
-    const linked  = (acc.linkedProjects || []).map(lid => {
+    const votes    = acc.votes || [];
+    const pct      = Math.min(100, (votes.length / threshold) * 100);
+    const fillCls  = acc.validated ? 'acc-vote-fill-v' : 'acc-vote-fill-p';
+    const hasVote  = votes.includes(currentUser?.id);
+    const linked   = (acc.linkedProjects || []).map(lid => {
       const lp = data.projects.find(p => p.id === lid);
       return lp ? `<span class="combined-proj-tag">🔗 ${lp.title}<button onclick="unlinkAccessory('${pid}','${acc.id}','${lid}')">✕</button></span>` : '';
     }).join('');
-
-    // Avatars votants
     const voterAvatars = votes.map(vid => {
       const vp = data.profiles.find(pr => pr.id === vid);
       return vp ? `<div class="vote-avatar-sm" style="background:${vp.color};width:20px;height:20px;font-size:0.6rem;" title="${vp.name}">${vp.name[0]}</div>` : '';
     }).join('');
 
+    // Disponibilité
+    const availHtml = renderAvailBadge(acc);
+
     return `
-      <div class="acc-card ${acc.validated ? 'acc-validated' : ''} ${acc.linkedProjects?.length > 0 ? 'acc-combined' : ''}">
+      <div class="acc-card ${acc.validated?'acc-validated':''} ${(acc.linkedProjects||[]).length>0?'acc-combined':''}" id="acc-card-${acc.id}">
         ${acc.validated ? '<div class="acc-status-pin validated">✅ Validé</div>' : ''}
-        ${acc.linkedProjects?.length > 0 ? '<div class="acc-status-pin combined">🔗 Combiné</div>' : ''}
+        ${(acc.linkedProjects||[]).length > 0 ? '<div class="acc-status-pin combined">🔗 Combiné</div>' : ''}
+
         ${acc.image
-          ? `<img class="acc-card-img" src="${acc.image}" alt="${acc.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="acc-card-img-placeholder" style="display:none;">🎒</div>`
+          ? `<img class="acc-card-img" src="${acc.image}" alt="${acc.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="acc-card-img-placeholder" style="display:none;">🎒</div>`
           : `<div class="acc-card-img-placeholder">🎒</div>`}
+
         <div class="acc-card-body">
           <div class="acc-card-name">${acc.name}</div>
-          ${renderAvailBadge(acc)}
+          ${availHtml}
           ${acc.price ? `<div class="acc-card-price">${parseFloat(acc.price).toLocaleString('fr-FR')} €</div>` : ''}
           ${acc.info  ? `<div class="acc-card-info">${acc.info}</div>` : ''}
+          ${linked    ? `<div style="margin-bottom:6px;display:flex;flex-wrap:wrap;gap:4px;">${linked}</div>` : ''}
 
-          <!-- Barre de votes -->
           <div class="acc-vote-wrap">
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;font-weight:700;">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.74rem;font-weight:700;margin-bottom:4px;">
               <span style="color:var(--text-muted);">${votes.length}/${threshold} vote(s)</span>
               <div style="display:flex;gap:3px;">${voterAvatars}</div>
             </div>
@@ -7144,34 +7183,28 @@ function renderAccessories() {
             </div>
           </div>
 
-          <!-- Projets liés -->
-          ${linked ? `<div style="margin-bottom:8px;"><div style="font-size:0.72rem;font-weight:700;color:var(--ocean);margin-bottom:4px;">Projets combinés :</div><div class="combined-projects-list">${linked}</div></div>` : ''}
-
-          <!-- Actions -->
           <div class="acc-actions">
             ${!acc.validated
               ? hasVote
-                ? `<button class="btn-unvote" onclick="voteAccessory('${pid}','${acc.id}')">✖ Retirer vote</button>`
+                ? `<button class="btn-unvote" onclick="voteAccessory('${pid}','${acc.id}')">✖ Retirer</button>`
                 : `<button class="btn-vote" onclick="voteAccessory('${pid}','${acc.id}')">👍 Voter</button>`
-              : '<span style="color:var(--palm);font-weight:800;font-size:0.82rem;">✅ Validé</span>'
+              : '<span style="color:var(--success);font-weight:800;font-size:0.8rem;">✅ Validé</span>'
             }
             ${otherProjects.length > 0 ? `
-              <div style="display:flex;gap:5px;flex:1;min-width:130px;">
-                <select id="combine-sel-${acc.id}" class="combine-select" style="height:32px;padding:4px 8px;font-size:0.78rem;flex:1;">
-                  <option value="">+ Combiner avec…</option>
-                  ${otherProjects.map(p => `<option value="${p.id}">${p.title}</option>`).join('')}
+              <div style="display:flex;gap:4px;flex:1;min-width:110px;">
+                <select id="combine-sel-${acc.id}" class="combine-select" style="height:30px;padding:3px 6px;font-size:0.76rem;flex:1;">
+                  <option value="">+ Combiner…</option>
+                  ${otherProjects.map(p=>`<option value="${p.id}">${p.title}</option>`).join('')}
                 </select>
                 <button class="btn btn-sand btn-sm" onclick="combineAccessoryWithProject('${pid}','${acc.id}')">🔗</button>
-              </div>
-            ` : ''}
+              </div>` : ''}
             ${isOwnerOrAdmin(acc) ? `
               <button class="btn btn-sm" style="background:var(--foam);color:var(--primary);" onclick="openEditAccessory('${pid}','${acc.id}')">✏️</button>
               <button class="btn btn-danger btn-sm" onclick="removeAccessory('${pid}','${acc.id}')">🗑</button>
             ` : ''}
           </div>
         </div>
-      </div>
-    `;
+      </div>`;
   }).join('');
 }
 
