@@ -689,12 +689,20 @@ header {
   background: rgba(15,23,42,0.5); z-index: 999;
   align-items: center; justify-content: center;
   backdrop-filter: blur(4px);
+  overflow-y: auto;           /* l'overlay lui-même peut scroller si modal trop grande */
+  padding: 16px;
 }
 .modal-overlay.open { display: flex; }
 .modal {
   background: white; border-radius: var(--radius-xl); padding: 28px;
-  max-width: 640px; width: 95%; max-height: 90vh; overflow-y: auto;
+  max-width: 640px; width: 95%;
+  max-height: min(90vh, 800px);
+  overflow-y: auto;           /* scroll DANS la modale */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain; /* empêche le scroll de traverser vers l'arrière-plan */
   box-shadow: var(--shadow-xl); border: 1px solid var(--border);
+  flex-shrink: 0;
+  position: relative;
 }
 .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
 .modal-title { font-size: 1.1rem; font-weight: 700; color: var(--text); }
@@ -3795,7 +3803,7 @@ header {
 
 <!-- MODAL DÉTAIL ACCESSOIRE -->
 <div class="modal-overlay" id="modal-acc-detail">
-  <div class="modal" style="max-width:480px;padding:0;overflow:hidden;">
+  <div class="modal" style="max-width:480px;padding:0;overflow:hidden auto;">
     <!-- Image / placeholder en haut -->
     <div id="mad-image-wrap" style="height:180px;background:linear-gradient(135deg,var(--foam),#b0dff0);display:flex;align-items:center;justify-content:center;position:relative;font-size:4rem;">
       <button class="modal-close" onclick="closeModal('modal-acc-detail')"
@@ -5081,7 +5089,16 @@ document.addEventListener('keydown', e => {
 
 
 function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
+  document.getElementById(id)?.classList.remove('open');
+  // Déverrouiller le scroll du body si plus aucune modale ouverte
+  if (!document.querySelector('.modal-overlay.open')) {
+    document.body.style.overflow = '';
+  }
+}
+
+function openModal(id) {
+  document.getElementById(id)?.classList.add('open');
+  document.body.style.overflow = 'hidden'; // bloquer le scroll de l'arrière-plan
 }
 
 function toast(msg, type = '') {
@@ -7061,7 +7078,7 @@ function emptyTrash() {
 }
 
 function openTrashModal() {
-  document.getElementById('modal-trash')?.classList.add('open');
+  openModal('modal-trash');
   renderTrashModal();
 }
 
@@ -7272,7 +7289,7 @@ function openEditAccessory(pid, aid) {
   document.getElementById('edit-acc-image').value    = acc.image || '';
   document.getElementById('edit-acc-info').value     = acc.info || '';
 
-  document.getElementById('modal-acc-edit').classList.add('open');
+  openModal('modal-acc-edit');
   setTimeout(() => document.getElementById('edit-acc-name').focus(), 150);
 }
 
@@ -7528,7 +7545,7 @@ function openEditGroup(gid) {
   document.getElementById('edit-grp-budget').value  = g.budget || '';
   document.getElementById('edit-grp-image').value   = g.image || '';
   document.getElementById('edit-grp-desc').value    = g.desc  || '';
-  document.getElementById('modal-group-edit').classList.add('open');
+  openModal('modal-group-edit');
 }
 
 function saveEditGroup() {
@@ -8628,7 +8645,7 @@ function openAddAccModal() {
   ['acc-tab-name','acc-tab-price','acc-tab-indiv-goal','acc-tab-stock','acc-tab-image','acc-tab-info']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const av = document.getElementById('acc-tab-available'); if (av) av.value = '';
-  document.getElementById('modal-add-acc')?.classList.add('open');
+  openModal('modal-add-acc');
   setTimeout(() => document.getElementById('acc-tab-name')?.focus(), 120);
 }
 
@@ -8749,7 +8766,7 @@ function openAccDetailModal(pid, aid, uid) {
     ${isOA ? `<button class="btn btn-danger" style="grid-column:1/-1;" onclick="closeModal('modal-acc-detail');removeAccessory(${pid?`'${pid}'`:'null'},'${aid}')">🗑 Supprimer</button>` : ''}
   `;
 
-  document.getElementById('modal-acc-detail').classList.add('open');
+  openModal('modal-acc-detail');
 }
 
 document.getElementById('modal-acc-detail')?.addEventListener('click', function(e) {
