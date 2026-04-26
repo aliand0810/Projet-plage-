@@ -5831,24 +5831,36 @@ function generatePwaIcon(size) {
 }
 
 function initPWA() {
-  // ── 1. Générer l'icône ──
-  const icon192 = generatePwaIcon(192);
-  const icon512 = generatePwaIcon(512);
-
-  // Apple touch icon
-  const atil = document.getElementById('apple-touch-icon-link');
-  if (atil) atil.href = generatePwaIcon(180);
+  // ── Icône réelle Trevani Splash ──
+  const ICON_SRC = (function() {
+    // Chercher n'importe quelle balise apple-touch-icon ou favicon qui a une data URI
+    const candidates = [
+      ...document.querySelectorAll('link[rel="apple-touch-icon"], link[rel="icon"]')
+    ];
+    for (const el of candidates) {
+      if (el.href && el.href.startsWith('data:')) return el.href;
+    }
+    // Fallback : canvas
+    return generatePwaIcon(192);
+  })();
 
   // Miniature dans le modal
   const preview = document.getElementById('pwa-icon-preview');
   if (preview) {
     const pCtx = preview.getContext('2d');
     const img  = new Image();
-    img.onload = () => pCtx.drawImage(img, 0, 0, 64, 64);
-    img.src    = icon192;
+    img.onload = () => {
+      pCtx.clearRect(0, 0, 64, 64);
+      // Arrondir les coins
+      pCtx.beginPath();
+      pCtx.roundRect(0, 0, 64, 64, 14);
+      pCtx.clip();
+      pCtx.drawImage(img, 0, 0, 64, 64);
+    };
+    img.src = ICON_SRC;
   }
 
-  // ── 2. Manifest ──
+  // ── Manifest avec notre vraie icône ──
   const manifest = {
     name:             'Trevani Splash',
     short_name:       'Trevani Splash',
@@ -5857,26 +5869,24 @@ function initPWA() {
     scope:            location.pathname.replace(/[^/]*$/, '') || '/',
     display:          'standalone',
     orientation:      'any',
-    theme_color:      '#023e8a',
-    background_color: '#f0f9ff',
+    theme_color:      '#1e3a8a',
+    background_color: '#f8fafc',
     lang:             'fr',
     categories:       ['productivity', 'utilities'],
     icons: [
-      { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-      { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+      { src: ICON_SRC, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: ICON_SRC, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
     ]
   };
   const mBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
   document.getElementById('pwa-manifest-link').href = URL.createObjectURL(mBlob);
 
-  // ── 3. Service Worker (fichier sw.js externe) ──
+  // ── Service Worker ──
   if ('serviceWorker' in navigator) {
-    // Essaie d'abord sw.js dans le même répertoire
     const swPath = location.pathname.replace(/[^/]*$/, '') + 'sw.js';
     navigator.serviceWorker.register(swPath)
       .then(reg => {
         console.log('✅ SW enregistré :', reg.scope);
-        // Vérifier si déjà installée
         window.addEventListener('appinstalled', () => {
           pwaPrompt = null;
           document.getElementById('pwa-fab').style.display = 'none';
@@ -5884,35 +5894,26 @@ function initPWA() {
         });
       })
       .catch(err => {
-        console.warn('⚠️ sw.js non trouvé — mode hors-ligne désactivé. Déposez sw.js dans le même dossier.', err.message);
+        console.warn('⚠️ sw.js non trouvé.', err.message);
       });
   }
 
-  // ── 4. Détection plateforme + prompt install ──
-  const isIOS    = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-  const isInApp  = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+  // ── Détection plateforme + prompt install ──
+  const isIOS   = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  const isInApp = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
-  if (isInApp) return; // déjà installée
+  if (isInApp) return;
 
   if (isIOS) {
-    // iOS : montrer le FAB avec les instructions manuelles
-    const fab = document.getElementById('pwa-fab');
-    if (fab) fab.style.display = 'flex';
-    const hbtn = document.getElementById('pwa-header-btn');
-    if (hbtn) hbtn.style.display = 'inline-flex';
+    const fab  = document.getElementById('pwa-fab');  if (fab)  fab.style.display  = 'flex';
+    const hbtn = document.getElementById('pwa-header-btn'); if (hbtn) hbtn.style.display = 'inline-flex';
   } else {
-    // Android/Desktop : attendre l'événement beforeinstallprompt
     window.addEventListener('beforeinstallprompt', e => {
       e.preventDefault();
       pwaPrompt = e;
-      const fab = document.getElementById('pwa-fab');
-      if (fab) fab.style.display = 'flex';
-      const hbtn = document.getElementById('pwa-header-btn');
-      if (hbtn) hbtn.style.display = 'inline-flex';
-      // Auto-afficher après 3s si pas déjà vu
-      if (!localStorage.getItem('pwaModalSeen')) {
-        setTimeout(pwaShowModal, 3000);
-      }
+      const fab  = document.getElementById('pwa-fab');  if (fab)  fab.style.display  = 'flex';
+      const hbtn = document.getElementById('pwa-header-btn'); if (hbtn) hbtn.style.display = 'inline-flex';
+      if (!localStorage.getItem('pwaModalSeen')) setTimeout(pwaShowModal, 3000);
     });
   }
 }
