@@ -3793,6 +3793,39 @@ header {
   </div>
 </div>
 
+<!-- MODAL DÉTAIL ACCESSOIRE -->
+<div class="modal-overlay" id="modal-acc-detail">
+  <div class="modal" style="max-width:480px;padding:0;overflow:hidden;">
+    <!-- Image / placeholder en haut -->
+    <div id="mad-image-wrap" style="height:180px;background:linear-gradient(135deg,var(--foam),#b0dff0);display:flex;align-items:center;justify-content:center;position:relative;font-size:4rem;">
+      <button class="modal-close" onclick="closeModal('modal-acc-detail')"
+        style="position:absolute;top:12px;right:12px;z-index:2;background:rgba(0,0,0,0.35);border-color:transparent;color:white;">✕</button>
+    </div>
+    <div style="padding:22px 24px 24px;">
+      <!-- Titre + badges -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;">
+        <div>
+          <div id="mad-name" style="font-size:1.2rem;font-weight:800;color:var(--text);margin-bottom:6px;"></div>
+          <div id="mad-avail"></div>
+        </div>
+        <div id="mad-price" style="color:var(--danger);font-weight:800;font-size:1.4rem;flex-shrink:0;"></div>
+      </div>
+
+      <!-- Infos -->
+      <div id="mad-meta" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;font-size:0.8rem;"></div>
+
+      <!-- Description -->
+      <div id="mad-info-wrap" style="display:none;padding:10px;background:var(--bg-2);border-radius:var(--radius-sm);border-left:3px solid var(--border);margin-bottom:14px;font-size:0.85rem;color:var(--text-muted);line-height:1.6;"></div>
+
+      <!-- Votes -->
+      <div id="mad-votes" style="margin-bottom:18px;"></div>
+
+      <!-- Actions -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="mad-actions"></div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL AJOUT ACCESSOIRE -->
 <div class="modal-overlay" id="modal-add-acc">
   <div class="modal" style="max-width:540px;">
@@ -8218,7 +8251,9 @@ function renderAccessoriesTab() {
       </div>` : '';
 
     return `
-      <div class="project-card ${a.validated?'proj-validated':''}">
+      <div class="project-card ${a.validated?'proj-validated':''}"
+        onclick="openAccDetailModal('${a._projId||''}','${a.id}','${a._uid}')"
+        style="cursor:pointer;">
         ${a.validated ? '<div class="acc-status-pin validated">✅ Validé</div>' : ''}
 
         ${a.image
@@ -8228,54 +8263,13 @@ function renderAccessoriesTab() {
         <div class="project-body">
           <div class="project-title">${a.name}</div>
           ${renderAvailBadge(a)}
-          ${a.price ? `<div style="color:var(--danger);font-weight:800;font-size:1.05rem;margin-bottom:6px;">${price.toLocaleString('fr-FR')} €</div>` : ''}
+          ${a.price ? `<div style="color:var(--danger);font-weight:800;font-size:1rem;margin-bottom:6px;">${price.toLocaleString('fr-FR')} €</div>` : ''}
 
-          ${a.info ? `
-            <button id="acc-info-btn-${a._uid}" onclick="toggleAccInfo('${a._uid}')"
-              style="background:none;border:none;color:var(--text-muted);font-size:0.72rem;font-weight:600;cursor:pointer;padding:0;margin-bottom:6px;font-family:inherit;display:flex;align-items:center;gap:4px;">
-              ▼ Description
-            </button>
-            <div id="acc-info-${a._uid}" style="display:none;font-size:0.82rem;color:var(--text-muted);line-height:1.5;margin-bottom:8px;padding:8px;background:var(--bg-2);border-radius:var(--radius-sm);border-left:3px solid var(--border);">${a.info}</div>
-          ` : ''}
-
-          ${indGoalHtml}
-
-          <div style="margin-bottom:10px;display:flex;flex-direction:column;gap:4px;">
-            <div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">Projet associé</div>
-            ${a._projId
-              ? `<div style="display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="closeGroupDetail();showTab('tab-projects');setBottomNav('bn-projects');setTimeout(()=>openAccessoriesPanel('${a._projId}'),200)">
-                  <span style="font-weight:800;color:var(--primary);font-size:0.85rem;text-decoration:underline;">${a._projTitle}</span>
-                  ${grp ? `<span style="background:${getGroupColor(data.groups.indexOf(grp))};color:white;padding:2px 7px;border-radius:8px;font-size:0.7rem;font-weight:700;">${grp.name}</span>` : ''}
-                </div>`
-              : `<span style="font-size:0.82rem;color:var(--text-muted);font-style:italic;">— Sans projet associé —</span>`
-            }
-            ${linked ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;">${linked}</div>` : ''}
+          <!-- Votes compact -->
+          <div class="acc-vote-track" style="margin-bottom:6px;">
+            <div class="${a.validated?'acc-vote-fill-v':'acc-vote-fill-p'}" style="width:${pct}%"></div>
           </div>
-
-          <div class="acc-vote-wrap" style="margin-bottom:10px;">
-            <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;margin-bottom:4px;">
-              <span style="color:var(--text-muted);">${votes.length}/${threshold} vote(s)</span>
-              <div style="display:flex;gap:3px;">${voterAvatars}</div>
-            </div>
-            <div class="acc-vote-track">
-              <div class="${a.validated?'acc-vote-fill-v':'acc-vote-fill-p'}" style="width:${pct}%"></div>
-            </div>
-            ${voterNames ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">${voterNames}</div>` : ''}
-          </div>
-
-          <div class="project-actions">
-            ${!a.validated
-              ? hasVote
-                ? `<button class="btn-unvote" onclick="voteAccessory('${a._projId}','${a.id}');renderAccessoriesTab()">✖ Retirer</button>`
-                : `<button class="btn-vote" onclick="voteAccessory('${a._projId}','${a.id}');renderAccessoriesTab()">👍 Voter</button>`
-              : '<span style="color:var(--palm);font-weight:800;font-size:0.82rem;">✅ Validé</span>'
-            }
-            <button class="btn btn-sm" style="background:#e8f4fd;color:var(--ocean);" onclick="showTab('tab-projects');setBottomNav('bn-projects');setTimeout(()=>openAccessoriesPanel('${a._projId}'),200)">🔗 Ouvrir</button>
-            ${isOwnerOrAdmin(a) ? `
-              <button class="btn btn-sm" style="background:var(--foam);color:var(--primary);" onclick="openEditAccessory(${a._projId?`'${a._projId}'`:'null'},'${a.id}')">✏️</button>
-              <button class="btn btn-danger btn-sm" onclick="removeAccessory(${a._projId?`'${a._projId}'`:'null'},'${a.id}')">🗑</button>
-            ` : ''}
-          </div>
+          <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;">${votes.length}/${threshold} vote${votes.length>1?'s':''} · ${a._projId?`📌 ${a._projTitle}`:'Sans projet'}</div>
         </div>
       </div>`;
   }).join('');
@@ -8672,6 +8666,95 @@ function addAccFromTabModal() {
   closeModal('modal-add-acc');
   renderAccessoriesTab();
 }
+
+// ── Modale détail accessoire ──
+function openAccDetailModal(pid, aid, uid) {
+  // Trouver l'accessoire
+  let acc = null;
+  const pidOrNull = pid || null;
+  if (pid) {
+    const proj = data.projects.find(p => p.id === pid);
+    acc = (proj?.accessories||[]).find(a => a.id === aid);
+  } else {
+    acc = (data.globalAccessories||[]).find(a => a.id === aid);
+  }
+  if (!acc) return;
+
+  const proj      = pid ? data.projects.find(p => p.id === pid) : null;
+  const grp       = proj ? data.groups.find(g => g.id === proj.groupId) : null;
+  const threshold = data.validationThreshold || 2;
+  const votes     = acc.votes || [];
+  const hasVoted  = votes.includes(currentUser?.id);
+  const pct       = Math.min(100, (votes.length / threshold) * 100);
+  const isOA      = currentUser && (currentUser.id === acc.createdBy || currentUser.role === 'admin');
+
+  // Image
+  const imgWrap = document.getElementById('mad-image-wrap');
+  if (imgWrap) {
+    if (acc.image) {
+      imgWrap.innerHTML = `
+        <img src="${acc.image}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;" onerror="this.style.display='none'">
+        <button class="modal-close" onclick="closeModal('modal-acc-detail')" style="position:absolute;top:12px;right:12px;z-index:2;background:rgba(0,0,0,0.4);border-color:transparent;color:white;">✕</button>`;
+    } else {
+      imgWrap.innerHTML = `
+        🎒
+        <button class="modal-close" onclick="closeModal('modal-acc-detail')" style="position:absolute;top:12px;right:12px;z-index:2;background:rgba(0,0,0,0.15);border-color:transparent;color:var(--text-muted);">✕</button>`;
+    }
+  }
+
+  // Nom + dispo
+  document.getElementById('mad-name').textContent = acc.name;
+  document.getElementById('mad-avail').innerHTML = renderAvailBadge(acc) || '';
+  document.getElementById('mad-price').textContent = acc.price ? parseFloat(acc.price).toLocaleString('fr-FR') + ' €' : '';
+
+  // Méta
+  const meta = [];
+  if (acc.stock > 0) meta.push(`<span style="background:var(--bg-2);padding:3px 8px;border-radius:8px;border:1px solid var(--border);">📦 ${acc.stock} en stock</span>`);
+  if (acc.individualGoal > 0) meta.push(`<span style="background:#fffbeb;color:#92400e;padding:3px 8px;border-radius:8px;border:1px solid #fde68a;">🎯 Objectif : ${parseFloat(acc.individualGoal).toLocaleString('fr-FR')} €</span>`);
+  if (proj) meta.push(`<span style="background:var(--foam);color:var(--primary);padding:3px 8px;border-radius:8px;border:1px solid #bfdbfe;">📌 ${proj.title}</span>`);
+  if (grp)  meta.push(`<span style="background:${getGroupColor(data.groups.indexOf(grp))}22;color:${getGroupColor(data.groups.indexOf(grp))};padding:3px 8px;border-radius:8px;">📁 ${grp.name}</span>`);
+  if (!pid) meta.push(`<span style="background:var(--bg-2);color:var(--text-muted);padding:3px 8px;border-radius:8px;border:1px solid var(--border);font-style:italic;">Sans projet</span>`);
+  document.getElementById('mad-meta').innerHTML = meta.join('');
+
+  // Description
+  const infoWrap = document.getElementById('mad-info-wrap');
+  if (acc.info) { infoWrap.style.display = 'block'; infoWrap.textContent = acc.info; }
+  else          { infoWrap.style.display = 'none'; }
+
+  // Votes
+  const voterNames = votes.map(vid => {
+    const vp = data.profiles.find(pr => pr.id === vid);
+    return vp ? `<span style="background:${vp.color};color:white;padding:2px 8px;border-radius:8px;font-size:0.72rem;font-weight:700;">${vp.name.split(' ')[0]}</span>` : '';
+  }).join(' ');
+  document.getElementById('mad-votes').innerHTML = `
+    <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;margin-bottom:5px;">
+      <span style="color:var(--text-muted);">Votes ${votes.length}/${threshold}</span>
+      ${acc.validated ? '<span style="color:var(--success);">✅ Validé</span>' : ''}
+    </div>
+    <div style="background:#e5e7eb;border-radius:8px;height:8px;overflow:hidden;margin-bottom:6px;">
+      <div style="background:${acc.validated?'var(--success)':'var(--accent)'};width:${pct}%;height:100%;border-radius:8px;transition:width 0.5s;"></div>
+    </div>
+    ${voterNames ? `<div style="display:flex;gap:4px;flex-wrap:wrap;">${voterNames}</div>` : '<div style="font-size:0.72rem;color:var(--text-muted);">Aucun vote encore</div>'}`;
+
+  // Actions
+  document.getElementById('mad-actions').innerHTML = `
+    ${!acc.validated
+      ? hasVoted
+        ? `<button class="btn" style="background:var(--bg-2);color:var(--text-muted);border:1px solid var(--border);grid-column:1/-1;" onclick="voteAccessory('${pid}','${aid}');closeModal('modal-acc-detail');renderAccessoriesTab()">✖ Retirer mon vote</button>`
+        : `<button class="btn btn-primary" style="grid-column:1/-1;" onclick="voteAccessory('${pid}','${aid}');closeModal('modal-acc-detail');renderAccessoriesTab()">👍 Voter pour cet accessoire</button>`
+      : `<div style="grid-column:1/-1;text-align:center;color:var(--success);font-weight:800;font-size:0.9rem;padding:8px;">✅ Accessoire validé par le groupe</div>`
+    }
+    ${pid ? `<button class="btn" style="background:#e8f4fd;color:var(--primary);border:1px solid #bfdbfe;" onclick="closeModal('modal-acc-detail');showTab('tab-projects');setBottomNav('bn-projects');setTimeout(()=>openAccessoriesPanel('${pid}'),200)">🔗 Voir le projet</button>` : '<div></div>'}
+    ${isOA ? `<button class="btn" style="background:var(--foam);color:var(--primary);border:1px solid #bfdbfe;" onclick="closeModal('modal-acc-detail');openEditAccessory('${pid||''}','${aid}')">✏️ Modifier</button>` : '<div></div>'}
+    ${isOA ? `<button class="btn btn-danger" style="grid-column:1/-1;" onclick="closeModal('modal-acc-detail');removeAccessory(${pid?`'${pid}'`:'null'},'${aid}')">🗑 Supprimer</button>` : ''}
+  `;
+
+  document.getElementById('modal-acc-detail').classList.add('open');
+}
+
+document.getElementById('modal-acc-detail')?.addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-acc-detail');
+});
 
 // ── Description dépliable ──
 function toggleAccInfo(uid) {
