@@ -3289,7 +3289,10 @@ header {
       <!-- Header avec bouton corbeille -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
         <div style="font-size:1.1rem;font-weight:800;color:var(--text);">🎒 Accessoires</div>
-        <button id="trash-btn" class="btn btn-sm" style="background:var(--bg-2);color:var(--text-muted);border:1px solid var(--border);" onclick="openTrashModal()">🗑 Corbeille</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="openAddAccModal()">➕ Ajouter</button>
+          <button id="trash-btn" class="btn btn-sm" style="background:var(--bg-2);color:var(--text-muted);border:1px solid var(--border);" onclick="openTrashModal()">🗑 Corbeille</button>
+        </div>
       </div>
 
       <!-- Panel budget objectif -->
@@ -3316,62 +3319,6 @@ header {
 
       </div>
 
-      <!-- Formulaire ajout rapide -->
-      <div class="acc-add-form" id="acc-tab-add-form" style="margin-bottom:20px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleAccTabForm()">
-          <div style="font-weight:800;color:var(--ocean-deep);font-size:0.95rem;">➕ Ajouter un accessoire</div>
-          <span id="acc-tab-form-arrow" style="font-size:1.2rem;transition:transform 0.2s;">▼</span>
-        </div>
-        <div id="acc-tab-form-fields" style="display:none;margin-top:18px;">
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Projet associé <span style="font-weight:400;color:var(--text-muted)">(optionnel)</span></label>
-              <select id="acc-tab-proj-sel">
-                <option value="">Aucun projet spécifique</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Nom de l'accessoire *</label>
-              <input type="text" id="acc-tab-name" placeholder="Ex: Parasol, Glacière…">
-            </div>
-            <div class="form-group">
-              <label>Prix d'achat (€)</label>
-              <input type="number" id="acc-tab-price" placeholder="25">
-            </div>
-            <div class="form-group">
-              <label>Objectif de financement (€)</label>
-              <input type="number" id="acc-tab-indiv-goal" placeholder="Montant à atteindre">
-            </div>
-            <div class="form-group">
-              <label>Disponibilité</label>
-              <select id="acc-tab-available">
-                <option value="">Non précisé</option>
-                <option value="available">✅ Disponible</option>
-                <option value="partial">⚠️ Partiellement disponible</option>
-                <option value="unavailable">❌ Indisponible</option>
-                <option value="tobuy">🛒 À acheter</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Quantité en stock</label>
-              <input type="number" id="acc-tab-stock" placeholder="0" min="0">
-            </div>
-            <div class="form-group full">
-              <label>Image (URL)</label>
-              <input type="url" id="acc-tab-image" placeholder="https://…">
-            </div>
-            <div class="form-group full">
-              <label>Description / infos</label>
-              <textarea id="acc-tab-info" rows="2" placeholder="Couleur, marque, où acheter, lien produit…"></textarea>
-            </div>
-          </div>
-          <div style="display:flex;gap:10px;margin-top:15px;">
-            <button class="btn btn-success" style="flex:1" onclick="addAccFromTab()">✅ Ajouter</button>
-            <button class="btn btn-sm" style="background:#e8f4fd;color:var(--ocean);" onclick="openAccExistTabPicker()">📋 Existants</button>
-            <button class="btn" style="background:#eee;color:#333;" onclick="toggleAccTabForm()">Annuler</button>
-          </div>
-        </div>
-      </div>
 
       <!-- Filtres -->
       <div class="filters-bar" style="margin-bottom:20px;">
@@ -3843,6 +3790,63 @@ header {
       oninput="renderAccExistTabList()"
       style="width:100%;padding:9px 13px;border:2px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:'Nunito',sans-serif;margin-bottom:12px;box-sizing:border-box;">
     <div id="acc-exist-tab-list" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+  </div>
+</div>
+
+<!-- MODAL AJOUT ACCESSOIRE -->
+<div class="modal-overlay" id="modal-add-acc">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal-header">
+      <div class="modal-title">🎒 Nouvel accessoire</div>
+      <button class="modal-close" onclick="closeModal('modal-add-acc')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Nom de l'accessoire *</label>
+        <input type="text" id="acc-tab-name" placeholder="Ex: Parasol, Glacière, Matelas gonflable…" autofocus>
+      </div>
+      <div class="form-group">
+        <label>Projet associé <span style="font-weight:400;color:var(--text-muted)">(optionnel)</span></label>
+        <select id="acc-tab-proj-sel">
+          <option value="">— Sans projet —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Disponibilité</label>
+        <select id="acc-tab-available">
+          <option value="">Non précisé</option>
+          <option value="available">✅ Disponible</option>
+          <option value="partial">⚠️ Partiel</option>
+          <option value="unavailable">❌ Indisponible</option>
+          <option value="tobuy">🛒 À acheter</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Prix d'achat (€)</label>
+        <input type="number" id="acc-tab-price" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label>Objectif financement (€)</label>
+        <input type="number" id="acc-tab-indiv-goal" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label>Quantité en stock</label>
+        <input type="number" id="acc-tab-stock" placeholder="0" min="0">
+      </div>
+      <div class="form-group full">
+        <label>Image (URL)</label>
+        <input type="url" id="acc-tab-image" placeholder="https://…">
+      </div>
+      <div class="form-group full">
+        <label>Description / infos</label>
+        <textarea id="acc-tab-info" rows="3" placeholder="Couleur, marque, lien produit, remarques…"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-primary" style="flex:1;" onclick="addAccFromTabModal()">✅ Ajouter</button>
+      <button class="btn btn-sm" style="background:#e8f4fd;color:var(--primary);" onclick="closeModal('modal-add-acc');openAccExistTabPicker()">📋 Existants</button>
+      <button class="btn" style="background:var(--bg-2);color:var(--text-muted);" onclick="closeModal('modal-add-acc')">Annuler</button>
+    </div>
   </div>
 </div>
 
@@ -8114,14 +8118,20 @@ function renderAccessoriesTab() {
     sel.value = cur;
   }
 
-  // Collecter tous les accessoires uniques
+  // Collecter TOUS les accessoires — projets + globaux
   const all = [];
   data.projects.forEach(p => {
     (p.accessories || []).forEach(a => {
-      if (!all.find(x => x._uid === p.id + a.id)) {
-        all.push({ ...a, _projId: p.id, _projTitle: p.title, _projColor: getGroupColor(data.groups.findIndex(g=>g.id===p.groupId)), _uid: p.id + a.id });
-      }
+      const uid = p.id + a.id;
+      if (!all.find(x => x._uid === uid))
+        all.push({ ...a, _projId: p.id, _projTitle: p.title, _uid: uid });
     });
+  });
+  // ✅ Fix bug : inclure les accessoires sans projet
+  (data.globalAccessories || []).forEach(a => {
+    const uid = 'global_' + a.id;
+    if (!all.find(x => x._uid === uid))
+      all.push({ ...a, _projId: null, _projTitle: '— Sans projet —', _uid: uid });
   });
 
   // Rendre la jauge avec TOUS les accessoires (pas filtrés)
@@ -8220,7 +8230,13 @@ function renderAccessoriesTab() {
           ${renderAvailBadge(a)}
           ${a.price ? `<div style="color:var(--danger);font-weight:800;font-size:1.05rem;margin-bottom:6px;">${price.toLocaleString('fr-FR')} €</div>` : ''}
 
-          ${a.info ? `<p style="font-size:0.83rem;color:var(--text-muted);line-height:1.5;margin-bottom:10px;border-left:3px solid var(--border);padding-left:8px;">${a.info}</p>` : ''}
+          ${a.info ? `
+            <button id="acc-info-btn-${a._uid}" onclick="toggleAccInfo('${a._uid}')"
+              style="background:none;border:none;color:var(--text-muted);font-size:0.72rem;font-weight:600;cursor:pointer;padding:0;margin-bottom:6px;font-family:inherit;display:flex;align-items:center;gap:4px;">
+              ▼ Description
+            </button>
+            <div id="acc-info-${a._uid}" style="display:none;font-size:0.82rem;color:var(--text-muted);line-height:1.5;margin-bottom:8px;padding:8px;background:var(--bg-2);border-radius:var(--radius-sm);border-left:3px solid var(--border);">${a.info}</div>
+          ` : ''}
 
           ${indGoalHtml}
 
@@ -8604,70 +8620,70 @@ renderBudget = function() {
   _origRenderBudget();
   renderBudgetPro();
 };
-function toggleAccTabForm() {
-  const fields = document.getElementById('acc-tab-form-fields');
-  const arrow  = document.getElementById('acc-tab-form-arrow');
-  const form   = document.getElementById('acc-tab-add-form');
-  const open   = fields.style.display !== 'none';
-  fields.style.display = open ? 'none' : 'block';
-  arrow.style.transform = open ? '' : 'rotate(180deg)';
-  form.classList.toggle('expanded', !open);
-  if (!open) {
-    const sel = document.getElementById('acc-tab-proj-sel');
-    if (sel) sel.innerHTML = '<option value="">— Sans projet associé —</option>' +
+// Alias legacy
+function toggleAccTabForm() { openAddAccModal(); }
+function addAccFromTab()    { addAccFromTabModal(); }
+
+// ── Modal ajout accessoire ──
+function openAddAccModal() {
+  const sel = document.getElementById('acc-tab-proj-sel');
+  if (sel) {
+    sel.innerHTML = '<option value="">— Sans projet —</option>' +
       data.projects.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
-    setTimeout(() => document.getElementById('acc-tab-name')?.focus(), 100);
   }
+  ['acc-tab-name','acc-tab-price','acc-tab-indiv-goal','acc-tab-stock','acc-tab-image','acc-tab-info']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const av = document.getElementById('acc-tab-available'); if (av) av.value = '';
+  document.getElementById('modal-add-acc')?.classList.add('open');
+  setTimeout(() => document.getElementById('acc-tab-name')?.focus(), 120);
 }
 
-function addAccFromTab() {
+function addAccFromTabModal() {
+  const name = document.getElementById('acc-tab-name')?.value.trim();
+  if (!name) { toast('Nom de l\'accessoire requis !', 'error'); return; }
+
   const projId = document.getElementById('acc-tab-proj-sel')?.value || '';
-  const name   = document.getElementById('acc-tab-name')?.value.trim();
-  if (!name) { toast('Nom requis', 'error'); return; }
-
-  const indGoal = parseFloat(document.getElementById('acc-tab-indiv-goal')?.value) || 0;
-
   const newAcc = {
     id:             'acc' + Date.now(),
     name,
     image:          document.getElementById('acc-tab-image')?.value.trim() || '',
     price:          document.getElementById('acc-tab-price')?.value || '',
-    individualGoal: indGoal,
+    individualGoal: parseFloat(document.getElementById('acc-tab-indiv-goal')?.value) || 0,
     info:           document.getElementById('acc-tab-info')?.value.trim() || '',
     availability:   document.getElementById('acc-tab-available')?.value || '',
     stock:          parseInt(document.getElementById('acc-tab-stock')?.value) || 0,
-    votes:          [],
-    validated:      false,
-    linkedProjects: [],
-    createdBy:      currentUser.id,
-    createdAt:      Date.now()
+    votes:          [], validated: false, linkedProjects: [],
+    createdBy:      currentUser?.id, createdAt: Date.now()
   };
 
   if (projId) {
-    // Lier à un projet spécifique
     const proj = data.projects.find(p => p.id === projId);
-    if (!proj) return;
+    if (!proj) { toast('Projet introuvable', 'error'); return; }
     if (!proj.accessories) proj.accessories = [];
     proj.accessories.push(newAcc);
     toast(`🎒 "${name}" ajouté à "${proj.title}" !`, 'success');
   } else {
-    // Accessoire global (stocké dans data.globalAccessories)
     if (!data.globalAccessories) data.globalAccessories = [];
     data.globalAccessories.push(newAcc);
-    toast(`🎒 Accessoire "${name}" ajouté (sans projet associé)`, 'success');
+    toast(`🎒 "${name}" ajouté !`, 'success');
   }
 
   saveData();
-
-  ['acc-tab-name','acc-tab-image','acc-tab-price','acc-tab-indiv-goal','acc-tab-info']
-    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  const sel = document.getElementById('acc-tab-proj-sel'); if (sel) sel.value = '';
-  const avEl = document.getElementById('acc-tab-available'); if(avEl) avEl.value='';
-  const stEl = document.getElementById('acc-tab-stock');     if(stEl) stEl.value='';
-
-  toggleAccTabForm();
+  closeModal('modal-add-acc');
   renderAccessoriesTab();
 }
+
+// ── Description dépliable ──
+function toggleAccInfo(uid) {
+  const el  = document.getElementById('acc-info-' + uid);
+  const btn = document.getElementById('acc-info-btn-' + uid);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (btn) btn.textContent = open ? '▼ Description' : '▲ Masquer';
+}
+
+
 
 // ═══════════════════════════════════════════════════════
 //  RÉORGANISATION DES ONGLETS
@@ -8855,6 +8871,9 @@ document.getElementById('modal-trash')?.addEventListener('click', function(e) {
 });
 document.getElementById('modal-acc-edit')?.addEventListener('click', function(e) {
   if (e.target === this) closeModal('modal-acc-edit');
+});
+document.getElementById('modal-add-acc')?.addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-add-acc');
 });
 </script>
 </body>
