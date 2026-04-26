@@ -6027,9 +6027,14 @@ function driveHandleToken(resp) {
     Object.keys(driveFolderCache).forEach(k => delete driveFolderCache[k]);
     updateDriveUI();
     loadDriveLastBackup();
-    driveCheckForNewBackup();
-    startDrivePoll();   // ← poll toutes les 60s
-    toast(`☁️ Drive connecté : ${driveUserInfo.name} (${driveUserInfo.email})`, 'success');
+    startDrivePoll();
+
+    // Si l'app est déjà affichée → restauration silencieuse en arrière-plan
+    if (currentUser && document.getElementById('app').style.display !== 'none') {
+      driveBackgroundRestore();
+    }
+
+    toast(`☁️ Drive : ${driveUserInfo.name}`, 'success');
   })
   .catch(() => {
     driveUserInfo = JSON.parse(localStorage.getItem(DRIVE_ACCOUNT_KEY) || 'null');
@@ -7760,75 +7765,103 @@ function showSplash(msg) {
   document.getElementById('splash-msg').textContent = msg;
   el.style.display = 'flex';
 }
-
 function hideSplash() {
   const el = document.getElementById('restore-splash');
   if (el) el.style.display = 'none';
 }
-
 function splashSkip() {
   _splashSkipped = true;
   hideSplash();
+  showAppAfterSplash();
 }
 
-/** Appelé juste après connexion réussie.
- *  Si Drive connecté → vérifie sauvegarde → restore si plus récente → affiche app.
- *  Sinon → affiche app directement. */
+/** Attend que Drive soit authentifié, jusqu'à maxMs ms (par pas de 300ms) */
+async function waitForDrive(maxMs) {
+  let elapsed = 0;
+  while (!driveAuthed && elapsed < maxMs) {
+    if (_splashSkipped) return false;
+    await new Promise(r => setTimeout(r, 300));
+    elapsed += 300;
+  }
+  return driveAuthed;
+}
+
+/** Télécharge et applique la dernière sauvegarde. Retourne la date (string) ou null. */
+async function fetchAndApplyLatestBackup() {
+  const backupId = await getBackupFolderId();
+  const q = `name='${DRIVE_FILE_NAME}' and '${backupId}' in parents and trashed=false`;
+  const resp = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,modifiedTime)&orderBy=modifiedTime desc&pageSize=1`,
+    { headers: { Authorization: 'Bearer ' + driveAccessToken } }
+  );
+  const d    = await resp.json();
+  const file = d.files?.[0];
+  if (!file) return null;
+
+  const cr = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
+    { headers: { Authorization: 'Bearer ' + driveAccessToken } }
+  );
+  const payload = await cr.json();
+  if (!payload?.data) return null;
+
+  data = payload.data;
+  saveData();
+  if (payload.messages) localStorage.setItem(MESSAGES_KEY, JSON.stringify(payload.messages));
+  localStorage.setItem('projetPlage_lastRestoreTs', Date.now().toString());
+  Object.keys(driveFolderCache).forEach(k => delete driveFolderCache[k]);
+
+  return new Date(file.modifiedTime).toLocaleString('fr-FR',
+    { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+/** Flux principal au login : attend Drive (6s max) puis restaure. */
 async function loginRestoreFlow() {
-  if (!driveAuthed) {
-    // Pas de Drive : affiche immédiatement
+  _splashSkipped = false;
+
+  // Attendre Drive jusqu'à 6s
+  showSplash('Connexion à Google Drive…');
+  const ready = await waitForDrive(6000);
+  if (_splashSkipped) return;
+
+  if (!ready) {
+    showSplash('📱 Mode hors-ligne — données locales');
+    await new Promise(r => setTimeout(r, 800));
     showAppAfterSplash();
     return;
   }
 
-  showSplash('Vérification de la sauvegarde Drive…');
-  _splashSkipped = false;
-
+  // Drive prêt → toujours restaurer la dernière sauvegarde
+  showSplash('Restauration de la dernière sauvegarde Drive…');
   try {
-    const backupId = await getBackupFolderId();
-    const q        = `name='${DRIVE_FILE_NAME}' and '${backupId}' in parents and trashed=false`;
-    const resp    = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=1`,
-      { headers: { Authorization: 'Bearer ' + driveAccessToken } }
-    );
-    const d    = await resp.json();
-    const file = d.files?.[0];
-
-    if (_splashSkipped) return; // utilisateur a cliqué "continuer"
-
-    if (!file) {
-      // Aucun fichier Drive → afficher directement
-      showAppAfterSplash();
-      return;
-    }
-
-    const driveTs    = new Date(file.modifiedTime).getTime();
-    const lastRestore = parseInt(localStorage.getItem('projetPlage_lastRestoreTs') || '0');
-    const localData   = localStorage.getItem('projetPlageData');
-
-    if (!localData || driveTs > lastRestore) {
-      // Drive plus récent → restaurer
-      showSplash('Restauration en cours…');
-      const cr = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
-        { headers: { Authorization: 'Bearer ' + driveAccessToken } }
-      );
-      const payload = await cr.json();
-      if (payload.data && !_splashSkipped) {
-        data = payload.data;
-        saveData();
-        if (payload.messages) localStorage.setItem(MESSAGES_KEY, JSON.stringify(payload.messages));
-        localStorage.setItem('projetPlage_lastRestoreTs', Date.now().toString());
-        Object.keys(driveFolderCache).forEach(k => delete driveFolderCache[k]);
-        showSplash('✅ Données restaurées !');
-        await new Promise(r => setTimeout(r, 800));
-      }
-    }
+    const dateStr = await fetchAndApplyLatestBackup();
+    if (_splashSkipped) return;
+    showSplash(dateStr
+      ? `✅ Restauré — sauvegarde du ${dateStr}`
+      : '☁️ Drive connecté — aucune sauvegarde encore');
+    await new Promise(r => setTimeout(r, 900));
   } catch(e) {
     console.warn('loginRestoreFlow:', e);
+    showSplash('⚠️ Drive inaccessible — données locales');
+    await new Promise(r => setTimeout(r, 1000));
   }
 
   showAppAfterSplash();
+}
+
+/** Restauration silencieuse quand Drive se connecte APRÈS l'affichage de l'app. */
+async function driveBackgroundRestore() {
+  if (!driveAuthed || !currentUser) return;
+  try {
+    const dateStr = await fetchAndApplyLatestBackup();
+    if (dateStr) {
+      refreshAll();
+      updateSbDrive('connected');
+      toast(`🔄 Données restaurées — sauvegarde du ${dateStr}`, 'success');
+    }
+  } catch(e) {
+    console.warn('driveBackgroundRestore:', e);
+  }
 }
 
 function showAppAfterSplash() {
