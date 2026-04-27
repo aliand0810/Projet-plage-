@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Trevani Splash">
-<link id="apple-touch-icon-link" rel="apple-touch-icon">
+<!-- apple-touch-icon intégré via favicon -->
 <link id="pwa-manifest-link" rel="manifest">
 
 <!-- Windows / Android tile -->
@@ -2980,7 +2980,7 @@ header {
         </div>
         <!-- Drive -->
         <div id="drive-status-wrap" style="display:none; align-items:center; gap:6px;">
-          <button id="drive-btn" class="profile-menu-btn" onclick="driveToggleConnect()">☁️ Drive</button>
+          <button id="drive-btn" class="profile-menu-btn" onclick="if(!driveAuthed)openDriveConnectModal()">☁️ Drive</button>
         </div>
         <button class="header-text-btn" id="header-msg-btn" onclick="openChat()" style="display:none;">
           💬 <span id="header-msg-badge" style="display:none;background:var(--danger);color:white;padding:1px 6px;border-radius:10px;font-size:0.68rem;font-weight:800;margin-left:2px;">0</span>
@@ -3007,7 +3007,7 @@ header {
       <div id="hdd-drive-status" style="font-size:0.72rem;opacity:0.7;"></div>
     </div>
     <button class="hdd-item" onclick="closeHeaderDropdown();openChat();">💬 Messages</button>
-    <button class="hdd-item" onclick="closeHeaderDropdown();driveToggleConnect();" id="hdd-drive-btn">☁️ Drive</button>
+    <button class="hdd-item" onclick="closeHeaderDropdown();openDriveConnectModal();" id="hdd-drive-btn">☁️ Drive</button>
     <button class="hdd-item" onclick="closeHeaderDropdown();openPasswordModal();">🔑 Modifier mon code</button>
     <button class="hdd-item" onclick="closeHeaderDropdown();pwaShowModal();">⬇️ Installer l'app</button>
     <button class="hdd-item danger" onclick="closeHeaderDropdown();doLogout();">⬅ Déconnexion</button>
@@ -3058,7 +3058,7 @@ header {
   <div class="status-bar" id="global-status-bar">
 
     <!-- Drive status -->
-    <div class="sb-drive disconnected" id="sb-drive" onclick="driveToggleConnect()" title="Cliquer pour connecter/déconnecter Drive">
+    <div class="sb-drive disconnected" id="sb-drive" onclick="if(!driveAuthed)openDriveConnectModal()" title="Cliquer pour connecter Drive">
       <div class="poll-spinner hidden" id="poll-spinner"></div>
       <span id="sb-drive-icon">☁️</span>
       <span id="sb-drive-text">Drive non connecté</span>
@@ -3379,7 +3379,7 @@ header {
 
         <!-- Actions -->
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
-          <button id="drive-config-btn" class="btn btn-primary btn-sm" onclick="driveToggleConnect()">☁️ Connecter avec Google</button>
+          <button id="drive-config-btn" class="btn btn-primary btn-sm" onclick="openDriveConnectModal()">☁️ Connecter avec Google</button>
           <button class="btn btn-sm" style="background:#e8f4fd;color:var(--ocean);" onclick="driveManualBackup()">💾 Sauvegarder maintenant</button>
           <button class="btn btn-sm" style="background:#fff3e0;color:#e65100;" onclick="driveRestore()">📥 Restaurer</button>
         </div>
@@ -3945,6 +3945,39 @@ header {
       <button class="btn btn-primary" style="flex:1" onclick="saveEditAccessory()">💾 Enregistrer</button>
       <button class="btn" style="background:var(--bg-2);color:var(--text-muted);" onclick="closeModal('modal-acc-edit')">Annuler</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL CONNEXION DRIVE -->
+<div class="modal-overlay" id="modal-drive-connect">
+  <div class="modal" style="max-width:420px;text-align:center;">
+    <div style="font-size:3rem;margin-bottom:12px;">☁️</div>
+    <div class="modal-title" style="text-align:center;font-size:1.3rem;margin-bottom:8px;">Connecter Google Drive</div>
+    <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:22px;line-height:1.6;">
+      Vos données (projets, groupes, accessoires, messages) sont sauvegardées automatiquement sur votre Drive et restaurées à chaque connexion.
+    </p>
+
+    <!-- Compte mémorisé si dispo -->
+    <div id="drive-connect-saved" style="display:none;background:var(--bg-2);border-radius:var(--radius-md);padding:14px;margin-bottom:18px;border:1px solid var(--border);">
+      <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;">Dernier compte utilisé</div>
+      <div id="drive-connect-saved-info" style="display:flex;align-items:center;gap:10px;"></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="btn btn-primary" style="padding:14px;font-size:1rem;" onclick="driveAutoConnectSilent()">
+        🔗 Connexion automatique
+      </button>
+      <button class="btn" style="background:var(--bg-2);border:1px solid var(--border);" onclick="driveManualConnect()">
+        👤 Choisir un compte Google
+      </button>
+      <button class="btn" style="background:none;color:var(--text-muted);font-size:0.82rem;" onclick="closeModal('modal-drive-connect')">
+        Continuer sans Drive
+      </button>
+    </div>
+
+    <p style="font-size:0.72rem;color:var(--text-muted);margin-top:16px;">
+      🔒 Vos données restent privées et ne sont accessibles que depuis votre compte Google.
+    </p>
   </div>
 </div>
 
@@ -6107,83 +6140,97 @@ function driveHandleToken(resp) {
   });
 }
 
-function driveToggleConnect() {
-  if (driveAuthed) {
-    if (driveAccessToken && window.google?.accounts?.oauth2) {
-      google.accounts.oauth2.revoke(driveAccessToken, () => {});
-    }
-    driveAuthed      = false;
-    driveAccessToken = null;
-    driveUserInfo    = null;
-    localStorage.removeItem(DRIVE_ACCOUNT_KEY);
-    Object.keys(driveFolderCache).forEach(k => delete driveFolderCache[k]);
-    stopDrivePoll();
-    updateDriveUI();
-    toast('Déconnecté de Drive', '');
-  } else {
-    if (!driveReady) { toast('API Google en cours de chargement…', 'error'); return; }
-    // prompt:'select_account' = forcer le sélecteur de compte Google
-    tokenClient.requestAccessToken({ prompt: 'select_account', login_hint: DEFAULT_DRIVE_EMAIL });
+// ── Connexion Drive (uniquement connexion, plus de déconnexion) ──
+function openDriveConnectModal() {
+  // Afficher le compte mémorisé si dispo
+  const saved = JSON.parse(localStorage.getItem(DRIVE_ACCOUNT_KEY) || 'null');
+  const savedWrap = document.getElementById('drive-connect-saved');
+  const savedInfo = document.getElementById('drive-connect-saved-info');
+  if (saved && savedWrap && savedInfo) {
+    savedWrap.style.display = 'block';
+    savedInfo.innerHTML = `
+      ${saved.picture ? `<img src="${saved.picture}" style="width:38px;height:38px;border-radius:50%;flex-shrink:0;">` : '<span style="font-size:1.6rem;">👤</span>'}
+      <div style="text-align:left;">
+        <div style="font-weight:700;font-size:0.88rem;">${saved.name}</div>
+        <div style="font-size:0.76rem;color:var(--text-muted);">${saved.email}</div>
+      </div>`;
+  } else if (savedWrap) {
+    savedWrap.style.display = 'none';
   }
+  document.getElementById('modal-drive-connect')?.classList.add('open');
+}
+
+function driveToggleConnect() {
+  // Redirige toujours vers la connexion (plus de déconnexion)
+  if (!driveAuthed) openDriveConnectModal();
+}
+
+function driveManualConnect() {
+  closeModal('modal-drive-connect');
+  if (!driveReady) { toast('API Google en cours de chargement…', 'error'); return; }
+  tokenClient.requestAccessToken({ prompt: 'select_account', login_hint: DEFAULT_DRIVE_EMAIL });
+}
+
+function driveAutoConnectSilent() {
+  closeModal('modal-drive-connect');
+  if (!driveReady) { toast('API Google en cours de chargement…', 'error'); return; }
+  tokenClient.requestAccessToken({ prompt: '', login_hint: DEFAULT_DRIVE_EMAIL });
 }
 
 function updateDriveUI() {
   const btn  = document.getElementById('drive-btn');
   const cbtn = document.getElementById('drive-config-btn');
   const stat = document.getElementById('drive-config-status');
+  const hddDrive = document.getElementById('hdd-drive-btn');
 
   if (driveAuthed && driveUserInfo) {
-    /* ── Bouton header ── */
     if (btn) {
       btn.innerHTML = driveUserInfo.picture
         ? `<img src="${driveUserInfo.picture}" style="width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:5px;"> ✅`
         : '☁️ ✅';
-      btn.title = `Drive : ${driveUserInfo.email} — Cliquer pour déconnecter`;
+      btn.title = `Drive connecté : ${driveUserInfo.email}`;
     }
-    /* ── Bouton admin ── */
-    if (cbtn) { cbtn.textContent = '🔌 Déconnecter'; cbtn.style.background = 'var(--coral)'; }
-    /* ── Statut admin ── */
+    if (cbtn) { cbtn.textContent = '☁️ Connecté'; cbtn.style.background = 'var(--success)'; cbtn.style.color = 'white'; }
+    if (hddDrive) { hddDrive.textContent = `☁️ Drive (${driveUserInfo.name?.split(' ')[0] || '✅'})`; }
     if (stat) {
       stat.innerHTML = `
         <div style="display:flex;align-items:center;gap:10px;">
-          ${driveUserInfo.picture ? `<img src="${driveUserInfo.picture}" style="width:34px;height:34px;border-radius:50%;border:2px solid var(--palm);">` : '<span style="font-size:1.5rem;">👤</span>'}
-          <div>
-            <div style="font-weight:800;color:var(--ocean-deep);">${driveUserInfo.name}</div>
+          ${driveUserInfo.picture ? `<img src="${driveUserInfo.picture}" style="width:34px;height:34px;border-radius:50%;border:2px solid var(--success);">` : '<span style="font-size:1.5rem;">👤</span>'}
+          <div style="flex:1;">
+            <div style="font-weight:800;color:var(--text);">${driveUserInfo.name}</div>
             <div style="font-size:0.78rem;color:var(--text-muted);">${driveUserInfo.email}</div>
-            <div style="font-size:0.72rem;color:var(--palm);font-weight:700;">✅ Drive connecté</div>
+            <div style="font-size:0.72rem;color:var(--success);font-weight:700;">✅ Drive synchronisé</div>
           </div>
-          <button class="btn btn-sm" style="margin-left:auto;background:#e8f4fd;color:var(--ocean);" onclick="driveToggleConnect()">🔄 Changer de compte</button>
         </div>`;
-      stat.style.color = '';
     }
   } else if (driveAuthed) {
     if (btn)  { btn.textContent = '☁️ ✅'; btn.title = 'Drive connecté'; }
-    if (cbtn) { cbtn.textContent = '🔌 Déconnecter'; cbtn.style.background = 'var(--coral)'; }
-    if (stat) { stat.textContent = '✅ Drive connecté'; stat.style.color = 'var(--palm)'; }
+    if (cbtn) { cbtn.textContent = '☁️ Connecté'; cbtn.style.background = 'var(--success)'; cbtn.style.color = 'white'; }
+    if (hddDrive) hddDrive.textContent = '☁️ Drive ✅';
+    if (stat) { stat.innerHTML = '<div style="color:var(--success);font-weight:700;">✅ Drive connecté</div>'; }
   } else {
-    /* ── Compte mémorisé (affichage même hors connexion) ── */
+    // Non connecté → afficher compte sauvegardé si dispo
     const saved = JSON.parse(localStorage.getItem(DRIVE_ACCOUNT_KEY) || 'null');
     if (btn)  { btn.textContent = '☁️ Drive'; btn.title = 'Connecter Google Drive'; }
-    if (cbtn) { cbtn.textContent = '☁️ Connecter Drive'; cbtn.style.background = ''; }
+    if (cbtn) { cbtn.textContent = '☁️ Connecter Drive'; cbtn.style.background = ''; cbtn.style.color = ''; cbtn.setAttribute('onclick','openDriveConnectModal()'); }
+    if (hddDrive) hddDrive.textContent = '☁️ Connecter Drive';
     if (stat) {
       stat.innerHTML = saved
-        ? `<div style="display:flex;align-items:center;gap:8px;color:var(--text-muted);">
-             ${saved.picture ? `<img src="${saved.picture}" style="width:28px;height:28px;border-radius:50%;opacity:0.5;">` : ''}
-             <div>
-               <div style="font-size:0.82rem;font-weight:700;">Dernier compte : ${saved.name}</div>
-               <div style="font-size:0.72rem;">${saved.email} — <em>Non connecté</em></div>
+        ? `<div style="display:flex;align-items:center;gap:10px;background:var(--bg-2);padding:12px;border-radius:var(--radius-md);border:1px solid var(--border);">
+             ${saved.picture ? `<img src="${saved.picture}" style="width:36px;height:36px;border-radius:50%;opacity:0.5;flex-shrink:0;">` : '<span style="font-size:1.5rem;opacity:0.5;">👤</span>'}
+             <div style="flex:1;">
+               <div style="font-weight:700;font-size:0.88rem;">${saved.name}</div>
+               <div style="font-size:0.74rem;color:var(--text-muted);">${saved.email}</div>
+               <div style="font-size:0.72rem;color:var(--danger);">⚠️ Non connecté</div>
              </div>
+             <button class="btn btn-primary btn-sm" onclick="openDriveConnectModal()">🔗 Connecter</button>
            </div>`
-        : 'Non connecté';
-      stat.style.color = '';
+        : `<div style="text-align:center;padding:16px;color:var(--text-muted);">
+             <div style="font-size:2rem;margin-bottom:8px;">☁️</div>
+             <div style="font-weight:700;margin-bottom:8px;">Drive non connecté</div>
+             <button class="btn btn-primary" onclick="openDriveConnectModal()">Connecter Google Drive</button>
+           </div>`;
     }
-  }
-
-  /* ── Mettre à jour la barre de statut ── */
-  if (driveAuthed && driveUserInfo) {
-    updateSbDrive('connected');
-  } else {
-    updateSbDrive('disconnected');
   }
 }
 
@@ -6326,10 +6373,28 @@ async function driveDoBackup() {
 
     // ── 1. Sauvegarde principale dans 💾 Sauvegardes/ ──
     const payload = {
-      timestamp: Date.now(), exportedAt,
+      timestamp:    Date.now(),
+      exportedAt,
+      appName:      'Trevani Splash',
+      version:      '5.0',
       driveAccount: driveUserInfo,
-      version: '4.0', data,
-      messages: allMsgs
+      // ── Données complètes ──
+      data: {
+        ...data,
+        // S'assurer que la corbeille et les accessoires globaux sont inclus
+        trash:             data.trash            || [],
+        globalAccessories: data.globalAccessories || [],
+      },
+      messages:     allMsgs,
+      // ── Métadonnées pour diagnostic ──
+      stats: {
+        groupsCount:      (data.groups||[]).length,
+        projectsCount:    (data.projects||[]).length,
+        profilesCount:    (data.profiles||[]).length,
+        accessoriesCount: (data.projects||[]).reduce((s,p)=>s+(p.accessories||[]).length,0) + (data.globalAccessories||[]).length,
+        messagesCount:    allMsgs.length,
+        trashCount:       (data.trash||[]).length,
+      }
     };
     const payloadStr = JSON.stringify(payload, null, 2);
     await driveUploadFile(DRIVE_FILE_NAME, payloadStr, backupId);
@@ -7587,7 +7652,7 @@ function toggleHeaderDropdown() {
   const hddDrive = document.getElementById('hdd-drive-btn');
   const hddSt    = document.getElementById('hdd-drive-status');
   if (hddSt)    hddSt.textContent    = driveAuthed ? `☁️ ${driveUserInfo?.email || 'Connecté'}` : '❌ Non connecté';
-  if (hddDrive) hddDrive.textContent = driveAuthed ? '🔌 Déconnecter Drive' : '☁️ Connecter Drive';
+  if (hddDrive) hddDrive.textContent = driveAuthed ? `☁️ ${driveUserInfo?.name?.split(' ')[0] || 'Drive'} ✅` : '☁️ Connecter Drive';
 }
 function closeHeaderDropdown() {
   document.getElementById('header-dropdown').classList.remove('open');
@@ -8983,6 +9048,9 @@ document.getElementById('modal-acc-edit')?.addEventListener('click', function(e)
 });
 document.getElementById('modal-add-acc')?.addEventListener('click', function(e) {
   if (e.target === this) closeModal('modal-add-acc');
+});
+document.getElementById('modal-drive-connect')?.addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-drive-connect');
 });
 </script>
 </body>
