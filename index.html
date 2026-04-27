@@ -1589,7 +1589,7 @@ header {
 .acc-card.acc-validated { border-color: var(--palm); box-shadow: 0 0 15px rgba(42,157,143,0.25); }
 .acc-card.acc-combined  { border-color: var(--sand); }
 
-.acc-card-img { width:100%; height:150px; object-fit:cover; display:block; }
+.acc-card-img { width:100%; height:160px; object-fit:cover; object-position:center; display:block; border-radius:var(--radius-md) var(--radius-md) 0 0; }
 .acc-card-img-placeholder {
   width:100%; height:150px; background:linear-gradient(135deg,var(--foam),#b0dff0);
   display:flex; align-items:center; justify-content:center; font-size:2.5rem;
@@ -3883,6 +3883,20 @@ header {
         <label>Image (URL)</label>
         <input type="url" id="acc-tab-image" placeholder="https://…">
       </div>
+      <div class="form-group">
+        <label>Position de l'image</label>
+        <select id="acc-tab-imgpos">
+          <option value="center">⬛ Centre</option>
+          <option value="top">⬆️ Haut</option>
+          <option value="bottom">⬇️ Bas</option>
+          <option value="left">⬅️ Gauche</option>
+          <option value="right">➡️ Droite</option>
+          <option value="top left">↖️ Haut gauche</option>
+          <option value="top right">↗️ Haut droite</option>
+          <option value="bottom left">↙️ Bas gauche</option>
+          <option value="bottom right">↘️ Bas droite</option>
+        </select>
+      </div>
       <div class="form-group full">
         <label>Description / infos</label>
         <textarea id="acc-tab-info" rows="3" placeholder="Couleur, marque, lien produit, remarques…"></textarea>
@@ -3935,6 +3949,20 @@ header {
       <div class="form-group full">
         <label>Image (URL)</label>
         <input type="url" id="edit-acc-image" placeholder="https://…">
+      </div>
+      <div class="form-group">
+        <label>Position de l'image</label>
+        <select id="edit-acc-imgpos">
+          <option value="center">⬛ Centre (défaut)</option>
+          <option value="top">⬆️ Haut</option>
+          <option value="bottom">⬇️ Bas</option>
+          <option value="left">⬅️ Gauche</option>
+          <option value="right">➡️ Droite</option>
+          <option value="top left">↖️ Haut gauche</option>
+          <option value="top right">↗️ Haut droite</option>
+          <option value="bottom left">↙️ Bas gauche</option>
+          <option value="bottom right">↘️ Bas droite</option>
+        </select>
       </div>
       <div class="form-group full">
         <label>Description / infos</label>
@@ -7296,7 +7324,7 @@ function renderAccessories() {
         ${(acc.linkedProjects||[]).length > 0 ? '<div class="acc-status-pin combined">🔗 Combiné</div>' : ''}
 
         ${acc.image
-          ? `<img class="acc-card-img" src="${acc.image}" alt="${acc.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="acc-card-img-placeholder" style="display:none;">🎒</div>`
+          ? `<img class="acc-card-img" src="${acc.image}" alt="${acc.name}" loading="lazy" style="object-position:${acc.imagePosition||'center'}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="acc-card-img-placeholder" style="display:none;">🎒</div>`
           : `<div class="acc-card-img-placeholder">🎒</div>`}
 
         <div class="acc-card-body">
@@ -7361,6 +7389,7 @@ function openEditAccessory(pid, aid) {
   document.getElementById('edit-acc-available').value = acc.availability || '';
   document.getElementById('edit-acc-stock').value    = acc.stock || '';
   document.getElementById('edit-acc-image').value    = acc.image || '';
+  document.getElementById('edit-acc-imgpos').value   = acc.imagePosition || 'center';
   document.getElementById('edit-acc-info').value     = acc.info || '';
 
   openModal('modal-acc-edit');
@@ -7390,6 +7419,7 @@ function saveEditAccessory() {
   acc.availability  = document.getElementById('edit-acc-available').value;
   acc.stock         = parseInt(document.getElementById('edit-acc-stock').value) || 0;
   acc.image         = document.getElementById('edit-acc-image').value.trim();
+  acc.imagePosition = document.getElementById('edit-acc-imgpos').value || 'center';
   acc.info          = document.getElementById('edit-acc-info').value.trim();
   acc.updatedAt     = Date.now();
 
@@ -8348,7 +8378,7 @@ function renderAccessoriesTab() {
         ${a.validated ? '<div class="acc-status-pin validated">✅ Validé</div>' : ''}
 
         ${a.image
-          ? `<img class="project-img" src="${a.image}" alt="${a.name}" onerror="this.src='https://placehold.co/400x180/caf0f8/0077b6?text=🎒'" style="height:160px;">`
+          ? `<img class="project-img" src="${a.image}" alt="${a.name}" onerror="this.src='https://placehold.co/400x180/caf0f8/0077b6?text=🎒'" style="height:160px;object-position:${a.imagePosition||'center'}">`
           : `<div style="height:120px;background:linear-gradient(135deg,var(--foam),#b0dff0);display:flex;align-items:center;justify-content:center;font-size:3rem;">🎒</div>`}
 
         <div class="project-body">
@@ -8719,6 +8749,7 @@ function openAddAccModal() {
   ['acc-tab-name','acc-tab-price','acc-tab-indiv-goal','acc-tab-stock','acc-tab-image','acc-tab-info']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const av = document.getElementById('acc-tab-available'); if (av) av.value = '';
+  const ip = document.getElementById('acc-tab-imgpos');    if (ip) ip.value = 'center';
   openModal('modal-add-acc');
   setTimeout(() => document.getElementById('acc-tab-name')?.focus(), 120);
 }
@@ -8732,6 +8763,7 @@ function addAccFromTabModal() {
     id:             'acc' + Date.now(),
     name,
     image:          document.getElementById('acc-tab-image')?.value.trim() || '',
+    imagePosition:  document.getElementById('acc-tab-imgpos')?.value || 'center',
     price:          document.getElementById('acc-tab-price')?.value || '',
     individualGoal: parseFloat(document.getElementById('acc-tab-indiv-goal')?.value) || 0,
     info:           document.getElementById('acc-tab-info')?.value.trim() || '',
@@ -8784,7 +8816,7 @@ function openAccDetailModal(pid, aid, uid) {
   if (imgWrap) {
     if (acc.image) {
       imgWrap.innerHTML = `
-        <img src="${acc.image}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;" onerror="this.style.display='none'">
+        <img src="${acc.image}" style="width:100%;height:100%;object-fit:cover;object-position:${acc.imagePosition||'center'};position:absolute;inset:0;" onerror="this.style.display='none'">
         <button class="modal-close" onclick="closeModal('modal-acc-detail')" style="position:absolute;top:12px;right:12px;z-index:2;background:rgba(0,0,0,0.4);border-color:transparent;color:white;">✕</button>`;
     } else {
       imgWrap.innerHTML = `
@@ -8833,10 +8865,16 @@ function openAccDetailModal(pid, aid, uid) {
       ? hasVoted
         ? `<button class="btn" style="background:var(--bg-2);color:var(--text-muted);border:1px solid var(--border);grid-column:1/-1;" onclick="voteAccessory('${pid}','${aid}');closeModal('modal-acc-detail');renderAccessoriesTab()">✖ Retirer mon vote</button>`
         : `<button class="btn btn-primary" style="grid-column:1/-1;" onclick="voteAccessory('${pid}','${aid}');closeModal('modal-acc-detail');renderAccessoriesTab()">👍 Voter pour cet accessoire</button>`
-      : `<div style="grid-column:1/-1;text-align:center;color:var(--success);font-weight:800;font-size:0.9rem;padding:8px;">✅ Accessoire validé par le groupe</div>`
+      : `<div style="grid-column:1/-1;text-align:center;color:var(--success);font-weight:800;font-size:0.9rem;padding:8px;">✅ Accessoire validé</div>`
     }
     ${pid ? `<button class="btn" style="background:#e8f4fd;color:var(--primary);border:1px solid #bfdbfe;" onclick="closeModal('modal-acc-detail');showTab('tab-projects');setBottomNav('bn-projects');setTimeout(()=>openAccessoriesPanel('${pid}'),200)">🔗 Voir le projet</button>` : '<div></div>'}
     ${isOA ? `<button class="btn" style="background:var(--foam);color:var(--primary);border:1px solid #bfdbfe;" onclick="closeModal('modal-acc-detail');openEditAccessory('${pid||''}','${aid}')">✏️ Modifier</button>` : '<div></div>'}
+    ${currentUser?.role === 'admin' && !acc.validated ? `
+      <button class="btn btn-success" style="grid-column:1/-1;font-weight:800;" onclick="validateAccessory('${pid||''}','${aid}')">✅ Valider cet accessoire</button>
+    ` : ''}
+    ${currentUser?.role === 'admin' && acc.validated ? `
+      <button class="btn" style="grid-column:1/-1;background:#fef2f2;color:var(--danger);border:1px solid #fecaca;" onclick="unvalidateAccessory('${pid||''}','${aid}')">↩️ Annuler la validation</button>
+    ` : ''}
     ${isOA ? `<button class="btn btn-danger" style="grid-column:1/-1;" onclick="closeModal('modal-acc-detail');removeAccessory(${pid?`'${pid}'`:'null'},'${aid}')">🗑 Supprimer</button>` : ''}
   `;
 
@@ -8846,6 +8884,37 @@ function openAccDetailModal(pid, aid, uid) {
 document.getElementById('modal-acc-detail')?.addEventListener('click', function(e) {
   if (e.target === this) closeModal('modal-acc-detail');
 });
+
+// ── Validation admin d'un accessoire ──
+function validateAccessory(pid, aid) {
+  const acc = pid
+    ? (data.projects.find(p=>p.id===pid)?.accessories||[]).find(a=>a.id===aid)
+    : (data.globalAccessories||[]).find(a=>a.id===aid);
+  if (!acc) return;
+  acc.validated   = true;
+  acc.validatedBy = currentUser.id;
+  acc.validatedAt = Date.now();
+  saveData();
+  closeModal('modal-acc-detail');
+  renderAccessories();
+  if (document.getElementById('tab-accessories')?.classList.contains('active')) renderAccessoriesTab();
+  toast(`✅ "${acc.name}" validé !`, 'success');
+}
+
+function unvalidateAccessory(pid, aid) {
+  const acc = pid
+    ? (data.projects.find(p=>p.id===pid)?.accessories||[]).find(a=>a.id===aid)
+    : (data.globalAccessories||[]).find(a=>a.id===aid);
+  if (!acc) return;
+  acc.validated   = false;
+  acc.validatedBy = null;
+  acc.validatedAt = null;
+  saveData();
+  closeModal('modal-acc-detail');
+  renderAccessories();
+  if (document.getElementById('tab-accessories')?.classList.contains('active')) renderAccessoriesTab();
+  toast(`↩️ "${acc.name}" dé-validé`, '');
+}
 
 // ── Description dépliable ──
 function toggleAccInfo(uid) {
