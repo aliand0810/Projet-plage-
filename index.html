@@ -3809,23 +3809,36 @@ header {
 <!-- MODAL DÉTAIL ACCESSOIRE -->
 <div class="modal-overlay" id="modal-acc-detail">
   <div class="modal" style="max-width:480px;padding:0;overflow:hidden auto;">
-    <!-- Image / placeholder en haut -->
-    <div id="mad-image-wrap" style="height:180px;background:linear-gradient(135deg,var(--foam),#b0dff0);display:flex;align-items:center;justify-content:center;position:relative;font-size:4rem;">
-      <button class="modal-close" onclick="closeModal('modal-acc-detail')"
+    <!-- Image cliquable -->
+    <div id="mad-image-wrap" style="height:220px;background:linear-gradient(135deg,var(--foam),#b0dff0);display:flex;align-items:center;justify-content:center;position:relative;font-size:4rem;cursor:pointer;" onclick="openImageViewer()">
+      <button class="modal-close" onclick="event.stopPropagation();closeModal('modal-acc-detail')"
         style="position:absolute;top:12px;right:12px;z-index:2;background:rgba(0,0,0,0.35);border-color:transparent;color:white;">✕</button>
+      <!-- loupe hint -->
+      <div id="mad-zoom-hint" style="display:none;position:absolute;bottom:10px;right:14px;background:rgba(0,0,0,0.45);color:white;font-size:0.72rem;padding:3px 9px;border-radius:20px;pointer-events:none;">🔍 Voir</div>
     </div>
-    <div style="padding:22px 24px 24px;">
-      <!-- Titre + badges -->
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;">
+    <div style="padding:20px 22px 24px;">
+      <!-- Titre + prix -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;">
         <div>
-          <div id="mad-name" style="font-size:1.2rem;font-weight:800;color:var(--text);margin-bottom:6px;"></div>
+          <div id="mad-name" style="font-size:1.2rem;font-weight:800;color:var(--text);margin-bottom:5px;"></div>
           <div id="mad-avail"></div>
         </div>
         <div id="mad-price" style="color:var(--danger);font-weight:800;font-size:1.4rem;flex-shrink:0;"></div>
       </div>
 
-      <!-- Infos -->
+      <!-- Méta badges -->
       <div id="mad-meta" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;font-size:0.8rem;"></div>
+
+      <!-- Association projet -->
+      <div id="mad-proj-assoc" style="margin-bottom:14px;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;">📌 Projet associé</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="mad-proj-sel" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.83rem;font-family:'Plus Jakarta Sans',sans-serif;background:white;">
+            <option value="">— Sans projet —</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="applyAccProject()">✔</button>
+        </div>
+      </div>
 
       <!-- Description -->
       <div id="mad-info-wrap" style="display:none;padding:10px;background:var(--bg-2);border-radius:var(--radius-sm);border-left:3px solid var(--border);margin-bottom:14px;font-size:0.85rem;color:var(--text-muted);line-height:1.6;"></div>
@@ -3837,6 +3850,12 @@ header {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="mad-actions"></div>
     </div>
   </div>
+</div>
+
+<!-- VISIONNEUSE IMAGE PLEIN ÉCRAN -->
+<div id="modal-img-viewer" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:1100;align-items:center;justify-content:center;cursor:zoom-out;" onclick="closeImageViewer()">
+  <img id="img-viewer-src" src="" style="max-width:95vw;max-height:95vh;object-fit:contain;border-radius:8px;user-select:none;" onclick="event.stopPropagation()">
+  <button onclick="closeImageViewer()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:white;font-size:1.4rem;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
 </div>
 
 <!-- MODAL AJOUT ACCESSOIRE -->
@@ -8790,6 +8809,64 @@ function addAccFromTabModal() {
   renderAccessoriesTab();
 }
 
+// ── Visionneuse image plein écran ──
+let _viewerImgSrc = '';
+function openImageViewer() {
+  if (!_viewerImgSrc) return;
+  document.getElementById('img-viewer-src').src = _viewerImgSrc;
+  const v = document.getElementById('modal-img-viewer');
+  v.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeImageViewer() {
+  document.getElementById('modal-img-viewer').style.display = 'none';
+  document.body.style.overflow = 'hidden'; // la modale détail est encore ouverte
+}
+
+// ── Association projet depuis la modale détail ──
+let _madCurrentAid = '', _madCurrentPid = '';
+
+function applyAccProject() {
+  const newPid = document.getElementById('mad-proj-sel')?.value || '';
+  const aid    = _madCurrentAid;
+  const oldPid = _madCurrentPid;
+  if (!aid) return;
+
+  // Retirer de l'ancienne source
+  let acc = null;
+  if (oldPid) {
+    const proj = data.projects.find(p => p.id === oldPid);
+    if (proj) {
+      acc = (proj.accessories||[]).find(a => a.id === aid);
+      if (acc) proj.accessories = proj.accessories.filter(a => a.id !== aid);
+    }
+  } else {
+    acc = (data.globalAccessories||[]).find(a => a.id === aid);
+    if (acc) data.globalAccessories = (data.globalAccessories||[]).filter(a => a.id !== aid);
+  }
+  if (!acc) return;
+
+  // Ajouter au nouveau projet ou global
+  if (newPid) {
+    const proj = data.projects.find(p => p.id === newPid);
+    if (!proj) return;
+    if (!proj.accessories) proj.accessories = [];
+    proj.accessories.push({ ...acc });
+    _madCurrentPid = newPid;
+    toast(`📌 "${acc.name}" déplacé vers "${proj.title}" !`, 'success');
+  } else {
+    if (!data.globalAccessories) data.globalAccessories = [];
+    data.globalAccessories.push({ ...acc });
+    _madCurrentPid = '';
+    toast(`📌 "${acc.name}" retiré de tout projet`, '');
+  }
+
+  saveData();
+  if (document.getElementById('tab-accessories')?.classList.contains('active')) renderAccessoriesTab();
+  renderAccessories();
+  closeModal('modal-acc-detail');
+}
+
 // ── Modale détail accessoire ──
 function openAccDetailModal(pid, aid, uid) {
   // Trouver l'accessoire
@@ -8810,6 +8887,22 @@ function openAccDetailModal(pid, aid, uid) {
   const hasVoted  = votes.includes(currentUser?.id);
   const pct       = Math.min(100, (votes.length / threshold) * 100);
   const isOA      = currentUser && (currentUser.id === acc.createdBy || currentUser.role === 'admin');
+
+  // Mémoriser pour applyAccProject
+  _madCurrentAid = aid;
+  _madCurrentPid = pid;
+
+  // Peupler le sélecteur de projet
+  const sel = document.getElementById('mad-proj-sel');
+  if (sel) {
+    sel.innerHTML = '<option value="">— Sans projet —</option>' +
+      data.projects.map(p => `<option value="${p.id}" ${p.id === pid ? 'selected' : ''}>${p.title}</option>`).join('');
+  }
+
+  // Visionneuse image
+  _viewerImgSrc = acc.image || '';
+  const hint = document.getElementById('mad-zoom-hint');
+  if (hint) hint.style.display = acc.image ? 'block' : 'none';
 
   // Image
   const imgWrap = document.getElementById('mad-image-wrap');
